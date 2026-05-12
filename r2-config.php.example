@@ -1,0 +1,15 @@
+<?php
+
+declare(strict_types=1);
+
+// Cloudflare R2 配置
+// 复制本文件为 r2-config.php 并填入真实配置
+
+define('R2_ACCOUNT_ID', '');                               // Cloudflare Account ID
+define('R2_ACCESS_KEY_ID', '');                             // R2 API Token Access Key ID
+define('R2_ACCESS_KEY_SECRET', '');                         // R2 API Token Secret Access Key
+define('R2_BUCKET', '');                                    // Bucket 名称
+define('R2_PUBLIC_BASE_URL', '');                           // 公开访问域名（必填，R2 需要配置自定义域名或 r2.dev 域名）
+                                                            // 示例: https://your-bucket.r2.dev
+                                                            // 或绑定的自定义域名: https://r2.example.com
+define('R2_KEY_PREFIX', 'cang-api-draw');                   // 对象 Key 前缀

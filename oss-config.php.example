@@ -1,0 +1,16 @@
+<?php
+
+declare(strict_types=1);
+
+// 阿里云 OSS 配置
+// 复制本文件为 oss-config.php 并填入真实配置
+
+define('OSS_ENDPOINT', 'oss-cn-hangzhou.aliyuncs.com');    // OSS 区域 Endpoint（外网）
+define('OSS_ACCESS_KEY_ID', '');                            // AccessKey ID
+define('OSS_ACCESS_KEY_SECRET', '');                        // AccessKey Secret
+define('OSS_BUCKET', '');                                   // Bucket 名称
+define('OSS_PUBLIC_BASE_URL', '');                          // 公开访问域名（留空则使用签名 URL）
+                                                            // 示例: https://your-bucket.oss-cn-hangzhou.aliyuncs.com
+                                                            // 或绑定的自定义域名: https://oss.example.com
+define('OSS_KEY_PREFIX', 'cang-api-draw');                  // 对象 Key 前缀
+define('OSS_SIGNED_URL_EXPIRES', 3600);                     // 签名 URL 有效期（秒），默认 1 小时

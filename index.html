@@ -1,0 +1,4334 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>苍API-绘图</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+      :root {
+        color-scheme: light;
+        --bg: #f5f3f0;
+        --panel: rgba(255, 255, 255, 0.72);
+        --panel-strong: rgba(255, 255, 255, 0.92);
+        --line: rgba(0, 0, 0, 0.06);
+        --line-strong: rgba(0, 0, 0, 0.1);
+        --text: #1a1a1a;
+        --muted: #6b7280;
+        --muted-soft: #9ca3af;
+        --accent: #2d5bf0;
+        --accent-soft: rgba(45, 91, 240, 0.08);
+        --accent-glow: rgba(45, 91, 240, 0.18);
+        --warm: #f97316;
+        --black: #111113;
+        --shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.12);
+        --shadow-soft: 0 8px 32px -8px rgba(0, 0, 0, 0.08);
+        --glass: saturate(1.8) blur(20px);
+      }
+
+      * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+        font-family: "Noto Sans SC", "LXGW WenKai Screen", -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 91, 240, 0.06), transparent),
+          radial-gradient(ellipse 60% 40% at 80% 10%, rgba(249, 115, 22, 0.04), transparent),
+          radial-gradient(ellipse 50% 60% at 50% 100%, rgba(45, 91, 240, 0.03), transparent);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .page {
+        position: relative;
+        z-index: 1;
+        width: min(1080px, calc(100vw - 48px));
+        margin: 0 auto;
+        padding: 36px 0 80px;
+        padding-bottom: max(80px, env(safe-area-inset-bottom, 0px));
+      }
+
+      .announce-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 20px;
+        margin-bottom: 18px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #f0f4ff 0%, #fef3e6 100%);
+        border: 1px solid rgba(45, 91, 240, 0.08);
+        font-size: 13px;
+        color: #3b3b44;
+        text-align: center;
+        line-height: 1.5;
+        animation: announceFadeIn 0.6s ease both;
+      }
+
+      .announce-bar a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
+      .announce-bar a:hover {
+        text-decoration: underline;
+      }
+
+      .announce-bar .announce-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        flex-shrink: 0;
+      }
+
+      .announce-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #a1a1aa;
+        font-size: 16px;
+        padding: 0 0 0 8px;
+        line-height: 1;
+        flex-shrink: 0;
+        transition: color 0.2s;
+      }
+
+      .announce-close:hover {
+        color: #52525b;
+      }
+
+      @keyframes announceFadeIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .hero {
+        text-align: center;
+        position: relative;
+        padding-bottom: 150px;
+      }
+
+      .hero-login {
+        position: absolute;
+        top: 0;
+        right: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border: 1px solid var(--line-strong);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        touch-action: manipulation;
+        z-index: 10;
+        transition: background 0.2s, box-shadow 0.2s, transform 0.15s;
+      }
+
+      .hero-login:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      }
+
+      .hero-login:active {
+        transform: scale(0.96);
+      }
+
+      .hero-login .key-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #dc2626;
+        flex-shrink: 0;
+      }
+
+      .hero-login .key-dot.ok {
+        background: #16a34a;
+      }
+
+      .hero-emoji {
+        font-size: 48px;
+        line-height: 1;
+        display: inline-block;
+        animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both, float 3s ease-in-out 1s infinite;
+        filter: drop-shadow(0 6px 12px rgba(0,0,0,0.1));
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(28px, 4.5vw, 44px);
+        letter-spacing: -0.03em;
+        font-weight: 800;
+        line-height: 1.25;
+        color: var(--black);
+        animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .hero p {
+        margin: 12px auto 0;
+        max-width: 420px;
+        color: #a1a1aa;
+        font-size: 15px;
+        line-height: 1.6;
+        font-weight: 400;
+        animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+      }
+
+      .hero-cta {
+        margin-top: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 44px;
+        padding: 0 24px;
+        border-radius: 999px;
+        background: var(--black);
+        color: #fff;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, var(--shadow);
+        transition: transform 0.22s, box-shadow 0.22s;
+        touch-action: manipulation;
+        animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+      }
+
+      .hero-cta:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 20px 40px -8px rgba(0,0,0,0.2);
+      }
+
+      .hero-cta:active {
+        transform: scale(0.97);
+      }
+
+      .hero-cta svg {
+        width: 16px;
+        height: 16px;
+        opacity: 0.6;
+        transition: transform 0.25s;
+      }
+
+      .hero-cta:hover svg {
+        transform: translateX(3px);
+      }
+
+      @keyframes heroIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-6px); }
+      }
+
+      .workspace {
+        margin: 24px auto 0;
+        width: min(920px, 100%);
+        display: grid;
+        gap: 20px;
+      }
+
+      .composer {
+        position: relative;
+        z-index: 5;
+        border-radius: 22px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 24px 24px 16px;
+        order: -1;
+        animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .mode-cards {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        position: relative;
+        z-index: 1;
+        margin-bottom: -58px;
+        pointer-events: none;
+        order: -2;
+        animation: heroIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+      }
+
+      .mode-card { pointer-events: auto; }
+
+      .mode-card {
+        width: 160px;
+        padding: 22px 18px 42px;
+        border-radius: 16px 16px 6px 6px;
+        border: 0;
+        background: #fff;
+        border-left: 4px solid #e5e7eb;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        cursor: pointer;
+        position: relative;
+        font: inherit;
+        text-align: left;
+        transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s, box-shadow 0.35s, border-color 0.3s;
+        touch-action: manipulation;
+        z-index: 1;
+        margin-right: -16px;
+      }
+
+      .mode-card:last-child { margin-right: 0; }
+
+      .mode-card:nth-child(1) { transform: rotate(-5deg) translateY(4px); z-index: 2; border-left-color: #22c55e; }
+      .mode-card:nth-child(2) { transform: rotate(0deg) translateY(0); z-index: 3; border-left-color: #3b82f6; }
+      .mode-card:nth-child(3) { transform: rotate(5deg) translateY(4px); z-index: 2; border-left-color: #a855f7; }
+
+      .mode-card.active {
+        transform: rotate(0deg) translateY(-38px) scale(1.08);
+        z-index: 10 !important;
+        border-left-color: transparent;
+        box-shadow: 0 16px 40px -6px rgba(0,0,0,0.22);
+        color: #fff;
+      }
+
+      .mode-card.active:nth-child(1) { background: #22c55e; }
+      .mode-card.active:nth-child(2) { background: #3b82f6; }
+      .mode-card.active:nth-child(3) { background: #a855f7; }
+
+      .mode-card:not(.active):hover {
+        transform: rotate(0deg) translateY(-6px) scale(1.03);
+        z-index: 8;
+        box-shadow: 0 12px 28px -4px rgba(0,0,0,0.16);
+      }
+
+      .mode-card:active:not(.active) {
+        transform: scale(0.97);
+      }
+
+      .mode-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1.3;
+        color: var(--black);
+        transition: color 0.3s;
+      }
+
+      .mode-card.active .mode-card-title { color: #fff; }
+
+      .mode-card-sub {
+        font-size: 12px;
+        color: #a1a1aa;
+        margin-top: 4px;
+        transition: color 0.3s;
+      }
+
+      .mode-card.active .mode-card-sub { color: rgba(255,255,255,0.8); }
+
+      .mini-actions {
+        display: inline-flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .ghost-btn,
+      .black-btn,
+      .icon-btn,
+      .config-btn {
+        border: 0;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+      }
+
+      .ghost-btn {
+        height: 36px;
+        border-radius: 10px;
+        padding: 0 12px;
+        background: #fff;
+        color: #374151;
+        font-size: 13px;
+        border: 1px solid var(--line-strong);
+      }
+
+      .ghost-btn:hover,
+      .config-btn:hover,
+      .icon-btn:hover,
+      .black-btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .ghost-btn:active,
+      .icon-btn:active {
+        transform: scale(0.97);
+      }
+
+      .input-card {
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        padding: 0;
+        position: relative;
+      }
+
+      .prompt-shell {
+        position: relative;
+        min-height: 80px;
+      }
+
+      .input-card.tool-active {
+        border-radius: 16px;
+        background: rgba(45, 91, 240, 0.02);
+        box-shadow: 0 0 0 2px rgba(45, 91, 240, 0.08);
+        animation: toolPulse 2s ease-in-out infinite;
+      }
+
+      .input-card.tool-active::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        border: 1.5px solid transparent;
+        background: linear-gradient(90deg, rgba(45, 91, 240, 0.15), rgba(168, 85, 247, 0.12), rgba(45, 91, 240, 0.15)) border-box;
+        -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        background-size: 200% 100%;
+        animation: borderShimmer 2.5s linear infinite;
+        pointer-events: none;
+      }
+
+      .input-card.tool-active::after {
+        display: none;
+      }
+
+      .prompt {
+        width: 100%;
+        min-height: 80px;
+        max-height: 200px;
+        border: 0;
+        resize: none;
+        outline: none;
+        background: transparent;
+        color: var(--text);
+        font: inherit;
+        font-size: 16px;
+        line-height: 1.7;
+        touch-action: pan-y;
+        overflow-y: auto;
+        transition: min-height 0.3s ease;
+      }
+
+      .prompt.has-upload {
+        padding-right: 90px;
+      }
+
+      .prompt::placeholder {
+        color: #c4c4c8;
+      }
+
+      .prompt.flash {
+        animation: promptFlash 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .prompt-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      .mini-ghost-btn {
+        height: 34px;
+        border-radius: 999px;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #52525b;
+        font: inherit;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        cursor: pointer;
+        transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s, opacity 0.2s, box-shadow 0.22s, border-color 0.2s, color 0.2s;
+      }
+
+      .mini-ghost-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(45, 91, 240, 0.10);
+        border-color: rgba(45, 91, 240, 0.18);
+        color: var(--accent);
+      }
+
+      .mini-ghost-btn:active:not(:disabled) {
+        transform: scale(0.95);
+        transition-duration: 0.08s;
+      }
+
+      .mini-ghost-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+        background: rgba(45, 91, 240, 0.04);
+        border-color: rgba(45, 91, 240, 0.12);
+        color: var(--accent);
+        animation: btnDisabledPulse 1.2s ease-in-out infinite;
+      }
+
+      .btn-icon {
+        font-size: 14px;
+        line-height: 1;
+        transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .mini-ghost-btn:hover .btn-icon {
+        transform: scale(1.15) rotate(-8deg);
+      }
+
+      .btn-spinner {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        border: 1.8px solid var(--accent);
+        border-right-color: transparent;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+
+      .thumb-row {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        bottom: 4px;
+        width: 72px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        z-index: 3;
+        overflow: hidden;
+      }
+
+      .thumb-row.has-files {
+        width: 84px;
+      }
+
+      .thumbs {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 2px;
+      }
+
+      .thumbs:empty {
+        display: none;
+      }
+
+      .upload-chip {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        border-radius: 12px;
+        border: 1px dashed #d4d4d8;
+        background: #fafafa;
+        display: grid;
+        place-items: center;
+        color: #71717a;
+        font-size: 11px;
+        position: relative;
+        overflow: hidden;
+        flex: 1 1 0;
+        gap: 2px;
+        transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+      }
+
+      .upload-chip.has-files {
+        border-style: solid;
+        border-color: rgba(79, 108, 247, 0.22);
+        background: linear-gradient(180deg, #f8faff, #f3f6ff);
+      }
+
+      .upload-chip:hover {
+        transform: translateY(-1px);
+        border-color: rgba(79, 108, 247, 0.34);
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+        background: #ffffff;
+      }
+
+      .upload-symbol {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 10px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        box-shadow: none;
+      }
+
+      .upload-label {
+        font-size: 11px;
+        color: #52525b;
+      }
+
+      .upload-meta {
+        font-size: 10px;
+        color: #7c7f89;
+      }
+
+      .upload-chip input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .upload-chip strong {
+        font-size: 24px;
+        line-height: 1;
+        display: block;
+      }
+
+      .thumb {
+        position: relative;
+        width: 100%;
+        height: 56px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #dedede;
+        background: #f6f6f6;
+        flex-shrink: 0;
+      }
+
+      .thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .thumb button {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 0;
+        background: rgba(24, 24, 27, 0.82);
+        color: white;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1;
+        display: grid;
+        place-items: center;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        flex-wrap: wrap;
+      }
+
+      .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .toolbar-left > * {
+        flex-shrink: 0;
+      }
+
+      .select,
+      .config-btn {
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--line-strong);
+        background: #ffffff;
+        color: #27272a;
+        padding: 0 12px;
+        font: inherit;
+        font-size: 13px;
+      }
+
+      .config-wrap {
+        position: relative;
+        z-index: 40;
+      }
+
+      .config-backdrop {
+        position: fixed;
+        inset: 0;
+        background: transparent;
+        display: none;
+        z-index: 90;
+      }
+
+      .config-backdrop.open {
+        display: block;
+      }
+
+      .config-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+      }
+
+      .config-panel {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 10px);
+        width: min(340px, calc(100vw - 48px));
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+        padding: 10px;
+        display: none;
+        z-index: 120;
+        isolation: isolate;
+        transform-origin: bottom left;
+      }
+
+      .config-panel::after {
+        content: "";
+        position: absolute;
+        left: 28px;
+        bottom: -8px;
+        width: 16px;
+        height: 16px;
+        background: #fff;
+        border-right: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        transform: rotate(45deg);
+      }
+
+      .config-panel.open {
+        display: block;
+        animation: panelUp 0.22s ease;
+      }
+
+      .settings-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.24);
+        backdrop-filter: blur(6px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 200;
+      }
+
+      .settings-modal.open {
+        display: flex;
+      }
+
+      .settings-card {
+        width: min(480px, 100%);
+        border-radius: 22px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 24px 64px rgba(0,0,0,0.16);
+        padding: 20px;
+        animation: slideUp 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(24px) scale(0.97); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .config-panel-handle {
+        display: none;
+      }
+
+      @media (max-width: 820px) {
+        .config-panel-handle {
+          display: block;
+          width: 36px;
+          height: 4px;
+          border-radius: 2px;
+          background: #d4d4d8;
+          margin: 0 auto 10px;
+        }
+      }
+
+      .settings-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .settings-head h3 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .settings-body {
+        display: grid;
+        gap: 14px;
+      }
+
+      .settings-field {
+        display: grid;
+        gap: 8px;
+      }
+
+      .settings-field label {
+        font-size: 14px;
+        color: #3f3f46;
+      }
+
+      .settings-input {
+        height: 46px;
+        width: 100%;
+        border-radius: 14px;
+        border: 1px solid var(--line-strong);
+        background: #fff;
+        color: #18181b;
+        padding: 0 14px;
+        font: inherit;
+        outline: none;
+      }
+
+      .settings-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+      }
+
+      .config-block + .config-block {
+        margin-top: 8px;
+        padding-top: 2px;
+      }
+
+      .config-title {
+        margin: 0 0 5px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #27272a;
+        letter-spacing: 0.01em;
+      }
+
+      .segmented {
+        display: grid;
+        gap: 3px;
+        background: rgba(0, 0, 0, 0.04);
+        border-radius: 10px;
+        padding: 3px;
+        border: 1px solid var(--line);
+      }
+
+      .segmented.cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .segmented.cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      .segmented.cols-1 {
+        grid-template-columns: 1fr;
+      }
+
+      .segmented.cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .segmented.cols-5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .segmented.cols-7 {
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+      }
+
+      .segmented button {
+        height: 32px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: #78716c;
+        font: inherit;
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+        transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.15s ease;
+        font-size: 12px;
+        font-weight: 500;
+        touch-action: manipulation;
+      }
+
+      .segmented button:active {
+        transform: scale(0.95);
+      }
+
+      .segmented button.active {
+        background: var(--black);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        z-index: 2;
+      }
+
+      .segmented button:hover:not(.active) {
+        background: rgba(0,0,0,0.03);
+        color: var(--text);
+      }
+
+      .segmented button.active .size-icon {
+        border-color: rgba(255, 255, 255, 0.88);
+      }
+
+      .segmented.sizes button {
+        height: 42px;
+        display: grid;
+        place-items: center;
+        gap: 1px;
+        padding: 4px 0;
+      }
+
+      .size-icon {
+        border: 1.6px solid #71717a;
+        border-radius: 3px;
+        display: block;
+      }
+
+      .size-label {
+        font-size: 11px;
+      }
+
+
+      .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .gallery-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #71717a;
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .toggle-switch {
+        position: relative;
+        width: 42px;
+        height: 24px;
+        border-radius: 999px;
+        background: #e5e7eb;
+        border: 0;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .toggle-switch::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+        transition: transform 0.2s ease;
+      }
+
+      .toggle-switch.active {
+        background: #24262d;
+      }
+
+      .toggle-switch.active::after {
+        transform: translateX(18px);
+      }
+
+      .black-btn {
+        height: 38px;
+        min-width: 88px;
+        border-radius: 999px;
+        padding: 0 18px;
+        background: var(--black);
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 14px;
+        box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 4px 16px rgba(0,0,0,0.15);
+        position: relative;
+        touch-action: manipulation;
+      }
+
+      .black-btn:active:not(:disabled) {
+        transform: scale(0.97);
+      }
+
+      .black-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .black-btn.loading {
+        padding-left: 16px;
+        padding-right: 18px;
+      }
+
+      .black-btn.loading::before {
+        content: "";
+        width: 14px;
+        height: 14px;
+        margin-right: 8px;
+        border-radius: 50%;
+        border: 1.8px solid rgba(255, 255, 255, 0.92);
+        border-right-color: transparent;
+        display: inline-block;
+        vertical-align: -2px;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .icon-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #f4f4f5;
+        color: #3f3f46;
+        font-size: 14px;
+      }
+
+      .preview-card,
+      .log-card {
+        border-radius: 22px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 20px;
+        animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+      }
+
+      .generation-stage {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: -8px;
+        transition: max-height 0.45s ease, opacity 0.28s ease, padding 0.28s ease, margin 0.28s ease;
+      }
+
+      .generation-stage.open {
+        max-height: 1200px;
+        opacity: 1;
+        padding-top: 18px;
+        padding-bottom: 18px;
+        margin-bottom: 0;
+      }
+
+      .stage-summary {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .stage-thumb {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        overflow: hidden;
+        flex: 0 0 auto;
+        background: #f4f4f5;
+        border: 1px solid #e5e7eb;
+      }
+
+      .stage-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .stage-copy {
+        min-width: 0;
+      }
+
+      .stage-prompt {
+        font-size: 15px;
+        line-height: 1.6;
+        color: #3f3f46;
+      }
+
+      .stage-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .stage-tag {
+        display: inline-flex;
+        align-items: center;
+        height: 28px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: #f4f4f5;
+        color: #71717a;
+        font-size: 13px;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: var(--black);
+      }
+
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #c4c4c7;
+      }
+
+      .dot.good {
+        background: #22c55e;
+      }
+
+      .dot.warn {
+        background: #f59e0b;
+      }
+
+      .dot.bad {
+        background: #ef4444;
+      }
+
+      .preview-box {
+        min-height: 320px;
+        border-radius: 18px;
+        border: 1px solid #ececec;
+        background: linear-gradient(180deg, #fafafa, #f2f2f2);
+        overflow: hidden;
+        padding: 0;
+      }
+
+      .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 4px;
+        min-height: 320px;
+        padding: 0;
+      }
+
+      .preview-item {
+        position: relative;
+        min-height: 320px;
+        overflow: hidden;
+        background: linear-gradient(180deg, #dbe7ff, #ebf8dc);
+        isolation: isolate;
+      }
+
+      .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .preview-item.enter img {
+        animation: cardReveal 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+      }
+
+      .preview-item.enter::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(255, 255, 255, 0.32), transparent 42%, rgba(255, 255, 255, 0.22) 58%, transparent 78%);
+        animation: revealSweep 0.78s ease both;
+        pointer-events: none;
+      }
+
+      .preview-item.loading {
+        background:
+          radial-gradient(circle at 50% 16%, rgba(114, 155, 255, 0.58), transparent 36%),
+          linear-gradient(180deg, rgba(104, 137, 244, 0.88) 0%, rgba(179, 194, 255, 0.68) 55%, rgba(231, 255, 212, 0.8) 100%);
+      }
+
+      .loading-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        border-radius: 10px;
+        background: rgba(82, 94, 120, 0.45);
+        color: white;
+        font-size: 12px;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+        animation: pulseSoft 1.35s ease-in-out infinite;
+        transition: opacity 0.3s;
+      }
+
+      .loading-badge .badge-spinner {
+        width: 12px;
+        height: 12px;
+        border: 1.5px solid rgba(255,255,255,0.35);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .loading-status {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(8px);
+        color: rgba(255,255,255,0.92);
+        font-size: 11px;
+        line-height: 1.45;
+        transition: opacity 0.35s ease;
+      }
+
+      .loading-status.fading {
+        opacity: 0;
+      }
+
+      .loading-status .status-text {
+        display: block;
+      }
+
+      .loading-status .status-dots::after {
+        content: '';
+        animation: dots 1.5s steps(3) infinite;
+      }
+
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes dots {
+        0%   { content: '.'; }
+        33%  { content: '..'; }
+        66%  { content: '...'; }
+      }
+
+      .loading-shimmer {
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(circle at 50% 12%, rgba(86, 137, 255, 0.52), transparent 34%),
+          linear-gradient(180deg, rgba(121, 152, 255, 0.82) 0%, rgba(176, 196, 255, 0.64) 58%, rgba(229, 254, 205, 0.72) 100%);
+        filter: blur(10px);
+        transform: scale(1.05);
+        animation: shimmer 2.4s ease-in-out infinite alternate;
+      }
+
+      .loading-grid {
+        position: absolute;
+        inset: 0;
+        opacity: 0.34;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.26) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px);
+        background-size: 28px 28px;
+        mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 90%);
+      }
+
+      .loading-orb {
+        position: absolute;
+        width: 42%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        filter: blur(20px);
+        opacity: 0.46;
+        mix-blend-mode: screen;
+      }
+
+      .loading-orb.orb-a {
+        top: 8%;
+        left: 6%;
+        background: rgba(151, 187, 255, 0.92);
+        animation: floatOrbA 4.2s ease-in-out infinite;
+      }
+
+      .loading-orb.orb-b {
+        right: 8%;
+        bottom: 12%;
+        background: rgba(229, 255, 188, 0.92);
+        animation: floatOrbB 4.8s ease-in-out infinite;
+      }
+
+      .loading-line {
+        position: absolute;
+        left: 14px;
+        right: 14px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.34);
+        overflow: hidden;
+      }
+
+      .loading-line::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 42%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
+        animation: lineScan 1.8s ease-in-out infinite;
+      }
+
+      .loading-line.line-a {
+        bottom: 28px;
+      }
+
+      .loading-line.line-b {
+        bottom: 14px;
+        right: 34%;
+        opacity: 0.72;
+      }
+
+      .placeholder {
+        color: var(--muted);
+        text-align: center;
+        padding: 24px;
+        place-self: center;
+      }
+
+      .placeholder strong {
+        display: block;
+        margin-bottom: 6px;
+        color: #27272a;
+      }
+
+      .meta {
+        margin-top: 12px;
+        display: grid;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .task-query {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .task-query-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .task-lock {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: rgba(255, 255, 255, 0.78);
+      }
+
+      .task-lock[hidden] {
+        display: none;
+      }
+
+      .task-lock-label {
+        font-size: 12px;
+        color: #71717a;
+        white-space: nowrap;
+      }
+
+      .task-lock code {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        padding: 6px 8px;
+        border-radius: 10px;
+        background: #f4f4f5;
+        color: #18181b;
+        font-size: 12px;
+      }
+
+
+
+      .task-recover-list {
+        display: grid;
+        gap: 8px;
+      }
+
+      .task-recover-card {
+        display: grid;
+        gap: 6px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .task-recover-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 13px;
+        color: #27272a;
+      }
+
+      .task-recover-meta {
+        font-size: 12px;
+        color: #71717a;
+        line-height: 1.6;
+      }
+
+      .task-recover-prompt {
+        font-size: 12px;
+        color: #52525b;
+        line-height: 1.6;
+        word-break: break-word;
+      }
+
+      .task-status-chip {
+        display: inline-flex;
+        align-items: center;
+        height: 24px;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: #f4f4f5;
+        color: #52525b;
+        font-size: 12px;
+      }
+
+      .task-recover-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .meta a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .log-card {
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .gallery-card {
+        border-radius: 22px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        padding: 0;
+        overflow: hidden;
+        animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+      }
+
+      .section-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 20px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        list-style: none;
+        user-select: none;
+        transition: background 0.15s;
+      }
+
+      .section-toggle::-webkit-details-marker { display: none; }
+
+      .section-toggle:hover {
+        background: rgba(0,0,0,0.02);
+      }
+
+      .toggle-arrow {
+        font-size: 16px;
+        color: #a1a1aa;
+        transition: transform 0.25s ease;
+      }
+
+      details[open] > .section-toggle .toggle-arrow {
+        transform: rotate(90deg);
+      }
+
+      .log-card > .log,
+      .gallery-card > .gallery-grid {
+        padding: 0 20px 16px;
+      }
+
+      .log {
+        white-space: pre-wrap;
+        line-height: 1.65;
+        color: #52525b;
+        font-size: 12px;
+      }
+
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+      }
+
+      .gallery-item {
+        position: relative;
+        display: block;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #f4f4f5;
+        aspect-ratio: 1 / 1;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .gallery-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1);
+      }
+
+      .gallery-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .gallery-item::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.18) 100%);
+        pointer-events: none;
+      }
+
+      .gallery-empty {
+        text-align: center;
+        color: #71717a;
+        font-size: 13px;
+        padding: 18px 0 4px;
+      }
+
+      .task-ball {
+        position: fixed;
+        right: 20px;
+        bottom: 24px;
+        bottom: max(24px, env(safe-area-inset-bottom, 0px));
+        z-index: 200;
+        display: none;
+      }
+
+      .task-ball.visible {
+        display: block;
+        animation: rise 0.3s ease both;
+      }
+
+      .task-ball-orb {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #34363d, #1f2126);
+        border: none;
+        color: #fff;
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 24px rgba(15, 23, 42, 0.22);
+        transition: transform 0.2s, box-shadow 0.2s;
+        touch-action: manipulation;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .task-ball-orb:hover {
+        transform: scale(1.06);
+        box-shadow: 0 8px 28px rgba(15, 23, 42, 0.3);
+      }
+
+      .task-ball-orb:active {
+        transform: scale(0.95);
+      }
+
+      .task-ball-orb .orb-spinner {
+        width: 22px;
+        height: 22px;
+        border: 2.5px solid rgba(255, 255, 255, 0.25);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      .task-ball-orb .orb-icon {
+        font-size: 18px;
+        line-height: 1;
+      }
+
+      .task-ball-orb .orb-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid #1f2126;
+      }
+
+      .task-ball-orb .orb-badge.processing {
+        background: #3b82f6;
+        animation: pulseSoft 1.5s infinite;
+      }
+
+      .task-ball-orb .orb-badge.completed {
+        background: #16a34a;
+      }
+
+      .task-ball-orb .orb-badge.failed {
+        background: #dc2626;
+      }
+
+      .task-ball-panel {
+        position: absolute;
+        bottom: 60px;
+        right: 0;
+        width: 280px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(229, 231, 235, 0.92);
+        border-radius: 16px;
+        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+        backdrop-filter: blur(12px);
+        padding: 14px;
+        display: none;
+        animation: slideUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .task-ball-panel.open {
+        display: block;
+      }
+
+      .task-ball-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+
+      .task-ball-panel-head h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #18181b;
+        margin: 0;
+      }
+
+      .task-ball-list {
+        max-height: 320px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .task-ball-item {
+        display: grid;
+        grid-template-columns: 8px 1fr auto;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 10px;
+        border-radius: 10px;
+        background: #f9fafb;
+        cursor: pointer;
+        transition: background 0.15s;
+        border: none;
+        font: inherit;
+        text-align: left;
+        width: 100%;
+      }
+
+      .task-ball-item:hover {
+        background: #f0f1f3;
+      }
+
+      .task-ball-item:active {
+        background: #e5e7eb;
+      }
+
+      .task-ball-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .task-ball-dot.processing {
+        background: #3b82f6;
+        animation: pulseSoft 1.5s infinite;
+      }
+
+      .task-ball-dot.completed {
+        background: #16a34a;
+      }
+
+      .task-ball-dot.failed {
+        background: #dc2626;
+      }
+
+      .task-ball-dot.queued {
+        background: #a1a1aa;
+      }
+
+      .task-ball-info {
+        min-width: 0;
+      }
+
+      .task-ball-info-id {
+        font-size: 11px;
+        font-family: ui-monospace, monospace;
+        color: #52525b;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .task-ball-info-msg {
+        font-size: 11px;
+        color: #a1a1aa;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-top: 1px;
+      }
+
+      .task-ball-tag {
+        font-size: 10px;
+        font-weight: 500;
+        padding: 2px 7px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+
+      .task-ball-tag.processing {
+        background: #eff6ff;
+        color: #2563eb;
+      }
+
+      .task-ball-tag.completed {
+        background: #f0fdf4;
+        color: #16a34a;
+      }
+
+      .task-ball-tag.failed {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+
+      .task-ball-tag.queued {
+        background: #f4f4f5;
+        color: #71717a;
+      }
+
+      .task-ball-empty {
+        text-align: center;
+        font-size: 12px;
+        color: #a1a1aa;
+        padding: 16px 0;
+      }
+
+      .footer {
+        margin-top: 64px;
+        text-align: center;
+        padding: 0 16px 12px;
+      }
+
+      .footer-inner {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .footer-divider {
+        width: 56px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+      }
+
+      .footer-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .footer-logo {
+        width: 26px;
+        height: 26px;
+        border-radius: 7px;
+        background: var(--black);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .footer-brand-text {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        color: #a1a1aa;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .footer-meta {
+        font-size: 12px;
+        color: #b4b4b8;
+        line-height: 1.6;
+      }
+
+      .footer-meta a {
+        color: #78716c;
+        text-decoration: none;
+        transition: color 0.2s;
+        border-bottom: 1px solid transparent;
+      }
+
+      .footer-meta a:hover {
+        color: var(--accent);
+        border-bottom-color: var(--accent-soft);
+      }
+
+      .footer-copyright {
+        font-size: 11px;
+        color: #d4d4d8;
+        letter-spacing: 0.04em;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(20px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes panelUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes shimmer {
+        from {
+          transform: scale(1.04) translateY(-6px);
+          opacity: 0.86;
+        }
+        to {
+          transform: scale(1.08) translateY(8px);
+          opacity: 1;
+        }
+      }
+
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes pulseSoft {
+        0%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.92;
+        }
+        50% {
+          transform: translateY(-1px);
+          opacity: 1;
+        }
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        15% { transform: translateX(-6px); }
+        30% { transform: translateX(5px); }
+        45% { transform: translateX(-4px); }
+        60% { transform: translateX(3px); }
+        75% { transform: translateX(-2px); }
+      }
+
+      .shake {
+        animation: shake 0.5s ease;
+      }
+
+      .log.flash {
+        animation: logFlash 0.6s ease;
+      }
+
+      @keyframes logFlash {
+        0% { background: rgba(220, 38, 38, 0.08); }
+        100% { background: transparent; }
+      }
+
+      @keyframes promptFlash {
+        0% {
+          background: transparent;
+          transform: translateY(0);
+        }
+        20% {
+          background: rgba(45, 91, 240, 0.06);
+          transform: translateY(-1px);
+        }
+        50% {
+          background: rgba(168, 85, 247, 0.05);
+        }
+        100% {
+          background: transparent;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes toolPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(45, 91, 240, 0.08); }
+        50% { box-shadow: 0 0 0 6px rgba(45, 91, 240, 0.04), 0 4px 20px rgba(45, 91, 240, 0.06); }
+      }
+
+      @keyframes borderShimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      @keyframes toolSweep {
+        0% { left: -40%; opacity: 0; }
+        30% { opacity: 1; }
+        70% { opacity: 1; }
+        100% { left: 110%; opacity: 0; }
+      }
+
+      @keyframes btnDisabledPulse {
+        0%, 100% { opacity: 0.55; }
+        50% { opacity: 0.72; }
+      }
+
+      @keyframes sweep {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(100%);
+        }
+      }
+
+      @keyframes floatOrbA {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) scale(1);
+        }
+        50% {
+          transform: translate3d(14px, 10px, 0) scale(1.08);
+        }
+      }
+
+      @keyframes floatOrbB {
+        0%,
+        100% {
+          transform: translate3d(0, 0, 0) scale(1);
+        }
+        50% {
+          transform: translate3d(-12px, -8px, 0) scale(1.05);
+        }
+      }
+
+      @keyframes lineScan {
+        0% {
+          transform: translateX(-120%);
+        }
+        100% {
+          transform: translateX(260%);
+        }
+      }
+
+      @keyframes cardReveal {
+        from {
+          opacity: 0;
+          transform: translateY(18px) scale(0.985);
+          filter: saturate(0.88) blur(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+          filter: saturate(1) blur(0);
+        }
+      }
+
+      @keyframes revealSweep {
+        0% {
+          opacity: 0.66;
+          transform: translateX(-32%);
+        }
+        100% {
+          opacity: 0;
+          transform: translateX(30%);
+        }
+      }
+
+      @media (max-width: 820px) {
+        .page {
+          width: min(100vw - 24px, 1120px);
+          padding: 28px 0 48px;
+        }
+
+        .hero {
+          padding-bottom: 160px;
+        }
+
+        .workspace {
+          margin-top: 12px;
+          gap: 14px;
+        }
+
+        .mode-cards {
+          margin-bottom: -46px;
+        }
+
+        .mode-card {
+          width: 136px;
+          padding: 16px 14px 34px;
+          margin-right: -12px;
+        }
+
+        .mode-card.active {
+          transform: rotate(0deg) translateY(-32px) scale(1.06);
+        }
+
+        .mode-card-title {
+          font-size: 14px;
+        }
+
+        .mode-card-sub {
+          font-size: 11px;
+        }
+
+        .composer,
+        .preview-card,
+        .log-card {
+          border-radius: 20px;
+        }
+
+        .composer {
+          padding: 20px 16px 14px;
+        }
+
+        .hero h1 {
+          font-size: clamp(26px, 8vw, 38px);
+        }
+
+        .toolbar {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .toolbar-left {
+          width: 100%;
+        }
+
+        .toolbar-right {
+          display: flex;
+          flex-direction: row;
+          gap: 8px;
+          width: 100%;
+        }
+
+        .toolbar-right .ghost-btn {
+          flex: 0 0 auto;
+        }
+
+        .toolbar-right .black-btn {
+          flex: 1;
+        }
+
+        .toolbar-right .icon-btn {
+          flex: 0 0 auto;
+        }
+
+        .config-btn {
+          width: 100%;
+          justify-content: flex-start;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .config-panel {
+          position: fixed;
+          left: 12px;
+          right: 12px;
+          bottom: 12px;
+          top: auto;
+          width: auto;
+          max-height: min(68vh, 560px);
+          overflow: auto;
+          border-radius: 20px;
+          padding: 14px;
+          z-index: 200;
+        }
+
+        .config-backdrop.open {
+          background: rgba(0,0,0,0.3);
+          z-index: 199;
+        }
+
+        .config-panel::after {
+          display: none;
+        }
+
+        .settings-modal {
+          align-items: flex-end;
+          padding: 12px;
+        }
+
+        .settings-card {
+          width: 100%;
+          border-radius: 24px 24px 18px 18px;
+          padding: 18px;
+        }
+
+        .input-card {
+          padding: 0;
+        }
+
+        .prompt {
+          min-height: 72px;
+          max-height: 180px;
+          font-size: 16px;
+          line-height: 1.7;
+        }
+
+        .prompt.has-upload {
+          padding-right: 82px;
+        }
+
+        .prompt-actions {
+          gap: 8px;
+        }
+
+        .thumb-row {
+          top: 8px;
+          right: 6px;
+          bottom: 6px;
+          width: 72px;
+          gap: 6px;
+        }
+
+        .upload-chip,
+        .thumb {
+          border-radius: 10px;
+        }
+
+        .stage-summary {
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .stage-copy {
+          width: 100%;
+        }
+
+        .preview-box,
+        .preview-grid,
+        .preview-item {
+          min-height: 220px;
+        }
+
+        .preview-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .footer {
+          margin-top: 32px;
+        }
+
+        .footer-brand {
+          font-size: 13px;
+        }
+
+        .footer-meta {
+          font-size: 11px;
+        }
+
+        .gallery-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .task-query {
+          grid-template-columns: 1fr;
+        }
+
+      }
+
+      @media (max-width: 520px) {
+        .page {
+          width: calc(100vw - 16px);
+          padding-top: 16px;
+        }
+
+        .hero {
+          padding-bottom: 140px;
+        }
+
+        .hero h1 {
+          font-size: clamp(22px, 7vw, 32px);
+        }
+
+        .mode-cards {
+          margin-bottom: -36px;
+        }
+
+        .mode-card {
+          width: 108px;
+          padding: 12px 10px 26px;
+          margin-right: -10px;
+          border-radius: 12px 12px 4px 4px;
+        }
+
+        .mode-card:last-child {
+          margin-right: 0;
+        }
+
+        .mode-card.active {
+          transform: rotate(0deg) translateY(-24px) scale(1.05);
+        }
+
+        .mode-card:nth-child(1) { transform: rotate(-4deg) translateY(3px); }
+        .mode-card:nth-child(3) { transform: rotate(4deg) translateY(3px); }
+
+        .mode-card-title {
+          font-size: 12px;
+        }
+
+        .mode-card-sub {
+          font-size: 10px;
+        }
+
+        .composer {
+          padding: 14px 12px 12px;
+          border-radius: 16px;
+        }
+
+        .input-card {
+          padding: 0;
+        }
+
+        .prompt {
+          min-height: 64px;
+          max-height: 160px;
+          font-size: 14px;
+        }
+
+        .prompt.has-upload {
+          padding-right: 68px;
+        }
+
+        .prompt-actions {
+          gap: 6px;
+          margin-top: 8px;
+        }
+
+        .thumb-row {
+          top: 4px;
+          right: 4px;
+          bottom: 4px;
+          width: 58px;
+          gap: 4px;
+        }
+
+        .upload-chip,
+        .thumb {
+          border-radius: 8px;
+        }
+
+        .mini-ghost-btn {
+          height: 30px;
+          font-size: 12px;
+          padding: 0 10px;
+        }
+
+        .toolbar {
+          gap: 8px;
+        }
+
+        .config-btn {
+          font-size: 12px;
+          height: 34px;
+        }
+
+        .ghost-btn {
+          height: 34px;
+          font-size: 12px;
+        }
+
+        .black-btn {
+          height: 36px;
+          font-size: 13px;
+        }
+
+        .icon-btn {
+          width: 34px;
+          height: 34px;
+        }
+
+        .segmented {
+          gap: 3px;
+          padding: 3px;
+        }
+
+        .segmented button {
+          height: 34px;
+          font-size: 11px;
+        }
+
+        .segmented.sizes.cols-7 {
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .segmented.sizes button {
+          height: 40px;
+        }
+
+        .preview-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-box,
+        .preview-grid,
+        .preview-item {
+          min-height: 180px;
+        }
+
+        .gallery-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .section-toggle {
+          padding: 10px 14px;
+          font-size: 13px;
+        }
+
+        .hero-login {
+          padding: 6px 10px;
+          font-size: 12px;
+        }
+
+        .log-card > .log,
+        .gallery-card > .gallery-grid {
+          padding: 0 14px 12px;
+        }
+
+        .task-query-actions {
+          width: 100%;
+        }
+
+        .config-panel {
+          padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        }
+
+        .settings-modal {
+          padding-bottom: env(safe-area-inset-bottom, 12px);
+        }
+
+        .hero-login {
+          padding: 10px 14px;
+          font-size: 13px;
+        }
+
+        .task-ball {
+          right: 14px;
+          bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        }
+
+        .task-ball-orb {
+          width: 48px;
+          height: 48px;
+        }
+
+        .task-ball-panel {
+          width: calc(100vw - 28px);
+          right: -14px;
+          bottom: 56px;
+          max-height: 60vh;
+          overflow-y: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div id="announceBar" class="announce-bar">
+        <span class="announce-tag">NEW</span>
+        <span>苍洱 API 全新上线，支持 GPT-image 图像生成 · <a href="https://crcr.us.ci" target="_blank">了解更多 →</a></span>
+        <button class="announce-close" onclick="this.parentElement.style.display='none'" aria-label="关闭">×</button>
+      </div>
+      <section class="hero">
+        <button id="heroLoginBtn" class="hero-login" type="button">
+          <span id="keyDot" class="key-dot"></span>
+          <span id="keyLabel">登录</span>
+        </button>
+        <h1>苍洱 AI 绘图</h1>
+      </section>
+
+      <section id="workspace" class="workspace">
+        <div class="mode-cards">
+          <button id="modeText" class="mode-card active" type="button">
+            <div class="mode-card-title">图像生成</div>
+            <div class="mode-card-sub">全能图像模型</div>
+          </button>
+          <button id="modeImage" class="mode-card" type="button">
+            <div class="mode-card-title">参考图生成</div>
+            <div class="mode-card-sub">支持组图生成</div>
+          </button>
+          <button id="modeReverse" class="mode-card" type="button">
+            <div class="mode-card-title">提示词生成</div>
+            <div class="mode-card-sub">扩写反推</div>
+          </button>
+        </div>
+        <article class="composer">
+          <div class="input-card">
+            <label class="sr-only" for="prompt">提示词</label>
+            <div class="prompt-shell">
+              <textarea id="prompt" class="prompt" placeholder="输入一句描述，生成风格明确、细节完整的图片"></textarea>
+              <div id="imageSection" class="thumb-row" style="display: none;">
+                <div class="thumbs" id="thumbs"></div>
+                <label id="inlineUploadChip" class="upload-chip" for="imageInput">
+                  <input id="imageInput" type="file" accept="image/*" multiple />
+                  <span class="upload-symbol" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path d="M3.333 4.667A1.333 1.333 0 0 1 4.667 3.333h6.666a1.333 1.333 0 0 1 1.334 1.334v6.666a1.333 1.333 0 0 1-1.334 1.334H4.667a1.333 1.333 0 0 1-1.334-1.334V4.667Z" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M5.333 10l1.6-1.733a.667.667 0 0 1 .98.014L9.067 9.6l1.053-1.2a.667.667 0 0 1 1 .013L12 9.467" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M10.667 6.333h2.666M12 5v2.667" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                      <circle cx="6.167" cy="6.167" r=".833" fill="currentColor"/>
+                    </svg>
+                  </span>
+                  <span id="uploadLabel" class="upload-label">添加图片</span>
+                  <span id="uploadMeta" class="upload-meta">最多 4 张</span>
+                </label>
+              </div>
+            </div>
+            <div class="prompt-actions">
+              <button id="optimizePromptBtn" class="mini-ghost-btn" type="button">✦ 提示词优化</button>
+              <button id="translatePromptBtn" class="mini-ghost-btn" type="button">⇄ 翻译</button>
+            </div>
+
+            <div class="toolbar">
+              <div class="toolbar-left">
+                <div id="configWrap" class="config-wrap">
+                  <button id="configBtn" class="config-btn" type="button">gpt-image-2 | 1:1 | 高清 2K | 1张</button>
+                  <div id="configBackdrop" class="config-backdrop"></div>
+                  <div id="configPanel" class="config-panel" role="dialog" aria-label="生成设置">
+                    <div class="config-panel-handle"></div>
+                    <div class="config-block">
+                      <h3 class="config-title">模型</h3>
+                      <div class="segmented cols-1" id="modelOptions">
+                        <button type="button" data-value="gpt-image-2" class="active">gpt-image-2</button>
+                      </div>
+                    </div>
+
+                    <div class="config-block">
+                      <h3 class="config-title">图像质量</h3>
+                      <div class="segmented cols-3" id="qualityOptions">
+                        <button type="button" data-value="low">标清 1K</button>
+                        <button type="button" data-value="medium" class="active">高清 2K</button>
+                        <button type="button" data-value="high">超清 4K</button>
+                      </div>
+                    </div>
+
+                    <div class="config-block">
+                      <h3 class="config-title">图片尺寸</h3>
+                      <div class="segmented sizes cols-7" id="sizeOptions">
+                        <button type="button" data-value="auto">
+                          <span class="size-icon" style="width: 16px; height: 16px; border-radius: 50%;"></span>
+                          <span class="size-label">自动</span>
+                        </button>
+                        <button type="button" data-value="1:1" class="active">
+                          <span class="size-icon" style="width: 16px; height: 16px;"></span>
+                          <span class="size-label">1:1</span>
+                        </button>
+                        <button type="button" data-value="3:2">
+                          <span class="size-icon" style="width: 18px; height: 12px;"></span>
+                          <span class="size-label">3:2</span>
+                        </button>
+                        <button type="button" data-value="2:3">
+                          <span class="size-icon" style="width: 12px; height: 18px;"></span>
+                          <span class="size-label">2:3</span>
+                        </button>
+                        <button type="button" data-value="16:9">
+                          <span class="size-icon" style="width: 21px; height: 12px;"></span>
+                          <span class="size-label">16:9</span>
+                        </button>
+                        <button type="button" data-value="9:16">
+                          <span class="size-icon" style="width: 12px; height: 21px;"></span>
+                          <span class="size-label">9:16</span>
+                        </button>
+                        <button type="button" data-value="4:3">
+                          <span class="size-icon" style="width: 18px; height: 14px;"></span>
+                          <span class="size-label">4:3</span>
+                        </button>
+                        <button type="button" data-value="3:4">
+                          <span class="size-icon" style="width: 14px; height: 18px;"></span>
+                          <span class="size-label">3:4</span>
+                        </button>
+                        <button type="button" data-value="5:4">
+                          <span class="size-icon" style="width: 18px; height: 15px;"></span>
+                          <span class="size-label">5:4</span>
+                        </button>
+                        <button type="button" data-value="4:5">
+                          <span class="size-icon" style="width: 15px; height: 18px;"></span>
+                          <span class="size-label">4:5</span>
+                        </button>
+                        <button type="button" data-value="2:1">
+                          <span class="size-icon" style="width: 20px; height: 10px;"></span>
+                          <span class="size-label">2:1</span>
+                        </button>
+                        <button type="button" data-value="1:2">
+                          <span class="size-icon" style="width: 10px; height: 20px;"></span>
+                          <span class="size-label">1:2</span>
+                        </button>
+                        <button type="button" data-value="3:1">
+                          <span class="size-icon" style="width: 21px; height: 7px;"></span>
+                          <span class="size-label">3:1</span>
+                        </button>
+                        <button type="button" data-value="1:3">
+                          <span class="size-icon" style="width: 7px; height: 21px;"></span>
+                          <span class="size-label">1:3</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="config-block">
+                      <h3 class="config-title">图片张数</h3>
+                      <div class="segmented cols-4" id="countOptions">
+                        <button type="button" data-value="1" class="active">1</button>
+                        <button type="button" data-value="2">2</button>
+                        <button type="button" data-value="3">3</button>
+                        <button type="button" data-value="4">4</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="toolbar-right">
+                <button id="downloadBtn" class="ghost-btn" type="button" disabled>下载结果</button>
+                <label class="gallery-toggle">
+                  <button id="publicToggle" class="toggle-switch active" type="button" aria-label="公开作品"></button>
+                  <span>公开</span>
+                </label>
+                <button id="clearBtn" class="icon-btn" type="button" aria-label="清空">⟲</button>
+                <button id="generateBtn" class="black-btn" type="button">生成</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article id="generationStage" class="preview-card generation-stage">
+          <div class="section-head">
+            <h2>生成结果</h2>
+            <span class="status" id="status"><span class="dot"></span><span>未生成</span></span>
+          </div>
+          <div class="stage-summary">
+            <div id="stageThumb" class="stage-thumb" style="display: none;"></div>
+            <div class="stage-copy">
+              <div id="stagePrompt" class="stage-prompt">这里会显示当前生成任务的摘要。</div>
+              <div id="stageTags" class="stage-tags"></div>
+            </div>
+          </div>
+          <div class="preview-box">
+            <div id="previewGrid" class="preview-grid">
+              <div class="placeholder">
+                <strong>这里会显示生成结果</strong>
+                <div>支持下载图片，失败时会展示接口原文。</div>
+              </div>
+            </div>
+          </div>
+            <div class="meta">
+            <div id="resultInfo">未生成图片，结果保存在云端。</div>
+            <div id="currentTaskLock" class="task-lock" hidden>
+              <span class="task-lock-label">当前任务号</span>
+              <code id="currentTaskIdText">-</code>
+              <button id="copyTaskIdBtn" class="ghost-btn" type="button">复制</button>
+              <button id="unlockTaskIdBtn" class="ghost-btn" type="button">切换</button>
+            </div>
+            <div class="task-query">
+              <input id="taskQueryInput" class="settings-input" type="text" placeholder="输入任务号查询生成结果" />
+              <div class="task-query-actions">
+                <button id="queryTaskBtn" class="ghost-btn" type="button">查询结果</button>
+                <button id="recoverTasksBtn" class="ghost-btn" type="button">找回我的任务</button>
+              </div>
+            </div>
+            <div id="resultUrl"></div>
+            <div id="taskRecoverList" class="task-recover-list"></div>
+          </div>
+        </article>
+
+        <details class="log-card">
+          <summary class="section-toggle">运行日志 <span class="toggle-arrow">›</span></summary>
+          <div class="log" id="log">等待输入参数。</div>
+        </details>
+
+        <details class="gallery-card">
+          <summary class="section-toggle">图片流 <span class="toggle-arrow">›</span></summary>
+          <div id="galleryGrid" class="gallery-grid"></div>
+        </details>
+
+        <footer class="footer">
+          <div class="footer-inner">
+            <div class="footer-divider"></div>
+            <div class="footer-brand">
+              <span class="footer-logo">苍</span>
+              <span class="footer-brand-text">苍洱 · CangAPI</span>
+            </div>
+            <div class="footer-meta"><a href="https://crcr.us.ci" target="_blank" rel="noreferrer">crcr.us.ci</a></div>
+            <div class="footer-copyright">&copy; 2026 苍洱 · All rights reserved</div>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <div id="taskBall" class="task-ball">
+      <div id="taskBallPanel" class="task-ball-panel">
+        <div class="task-ball-panel-head">
+          <h4>全部任务</h4>
+          <button id="taskBallRefreshBtn" class="mini-ghost-btn" type="button">刷新</button>
+        </div>
+        <div id="taskBallList" class="task-ball-list"></div>
+      </div>
+      <button id="taskBallOrb" class="task-ball-orb" type="button" title="任务列表">
+        <div class="orb-spinner"></div>
+        <span id="taskBallBadge" class="orb-badge processing"></span>
+      </button>
+    </div>
+
+    <div id="settingsModal" class="settings-modal" aria-hidden="true">
+      <div class="settings-card" role="dialog" aria-label="设置">
+        <div class="settings-head">
+          <h3>设置</h3>
+          <button id="closeSettingsBtn" class="icon-btn" type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="settings-body">
+          <div class="settings-field">
+            <label for="apiKeyInput">API Key</label>
+            <input id="apiKeyInput" class="settings-input" type="password" placeholder="填写 API Key" />
+          </div>
+          <div class="settings-foot">
+            <button id="clearKeyBtn" class="ghost-btn" type="button">清除 Key</button>
+            <button id="saveKeyBtn" class="black-btn" type="button">保存 Key</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const els = {
+        modeText: document.getElementById("modeText"),
+        modeImage: document.getElementById("modeImage"),
+        modeReverse: document.getElementById("modeReverse"),
+        apiKeyInput: document.getElementById("apiKeyInput"),
+        inputCard: document.querySelector(".input-card"),
+        prompt: document.getElementById("prompt"),
+        optimizePromptBtn: document.getElementById("optimizePromptBtn"),
+        translatePromptBtn: document.getElementById("translatePromptBtn"),
+        saveKeyBtn: document.getElementById("saveKeyBtn"),
+        clearKeyBtn: document.getElementById("clearKeyBtn"),
+        heroLoginBtn: document.getElementById("heroLoginBtn"),
+        keyDot: document.getElementById("keyDot"),
+        keyLabel: document.getElementById("keyLabel"),
+        settingsModal: document.getElementById("settingsModal"),
+        closeSettingsBtn: document.getElementById("closeSettingsBtn"),
+        imageSection: document.getElementById("imageSection"),
+        inlineUploadChip: document.getElementById("inlineUploadChip"),
+        uploadLabel: document.getElementById("uploadLabel"),
+        uploadMeta: document.getElementById("uploadMeta"),
+        imageInput: document.getElementById("imageInput"),
+        thumbs: document.getElementById("thumbs"),
+        generateBtn: document.getElementById("generateBtn"),
+        downloadBtn: document.getElementById("downloadBtn"),
+        publicToggle: document.getElementById("publicToggle"),
+        clearBtn: document.getElementById("clearBtn"),
+        log: document.getElementById("log"),
+        generationStage: document.getElementById("generationStage"),
+        previewGrid: document.getElementById("previewGrid"),
+        stageThumb: document.getElementById("stageThumb"),
+        stagePrompt: document.getElementById("stagePrompt"),
+        stageTags: document.getElementById("stageTags"),
+        resultInfo: document.getElementById("resultInfo"),
+        resultUrl: document.getElementById("resultUrl"),
+        currentTaskLock: document.getElementById("currentTaskLock"),
+        currentTaskIdText: document.getElementById("currentTaskIdText"),
+        copyTaskIdBtn: document.getElementById("copyTaskIdBtn"),
+        unlockTaskIdBtn: document.getElementById("unlockTaskIdBtn"),
+        taskQueryInput: document.getElementById("taskQueryInput"),
+        queryTaskBtn: document.getElementById("queryTaskBtn"),
+        recoverTasksBtn: document.getElementById("recoverTasksBtn"),
+        taskRecoverList: document.getElementById("taskRecoverList"),
+        status: document.getElementById("status"),
+        galleryGrid: document.getElementById("galleryGrid"),
+        taskBall: document.getElementById("taskBall"),
+        taskBallOrb: document.getElementById("taskBallOrb"),
+        taskBallPanel: document.getElementById("taskBallPanel"),
+        taskBallList: document.getElementById("taskBallList"),
+        taskBallRefreshBtn: document.getElementById("taskBallRefreshBtn"),
+        taskBallBadge: document.getElementById("taskBallBadge"),
+        configWrap: document.getElementById("configWrap"),
+        configBtn: document.getElementById("configBtn"),
+        configBackdrop: document.getElementById("configBackdrop"),
+        configPanel: document.getElementById("configPanel"),
+        modelOptions: document.getElementById("modelOptions"),
+        qualityOptions: document.getElementById("qualityOptions"),
+        sizeOptions: document.getElementById("sizeOptions"),
+        countOptions: document.getElementById("countOptions"),
+      };
+
+      const state = {
+        mode: "text",
+        files: [],
+        thumbUrls: [],
+        downloadItems: [],
+        model: "gpt-image-2",
+        quality: "medium",
+        size: "1:1",
+        count: 1,
+        panelOpen: false,
+        settingsOpen: false,
+        savedKey: "",
+        stageThumbUrl: "",
+        promptToolRunning: false,
+        activeTaskId: "",
+        activeTaskLocked: false,
+        pollTimer: 0,
+        taskDelayNoticeLevel: "",
+        publicGallery: true,
+      };
+
+      const FIXED_BASE_URL = "proxy-openai.php?path=";
+      const KEY_STORAGE_NAME = "openai_image_api_key";
+      const TASK_STORAGE_NAME = "openai_image_last_task_id";
+      const TASK_ENDPOINT = "generate-task.php";
+      const LIST_ENDPOINT = "list.php?limit=18";
+      const PROMPT_TOOL_MODEL = "gpt-5.4-mini";
+      const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+      const TASK_POLL_INTERVAL = 4000;
+      const TASK_LONG_WAIT_MS = 3 * 60 * 1000;
+      const TASK_VERY_LONG_WAIT_MS = 5 * 60 * 1000;
+      const MODEL_LABELS = {
+        "gpt-image-2": "gpt-image-2",
+      };
+      const QUALITY_LABELS = {
+        low: "标清 1K",
+        medium: "高清 2K",
+        high: "超清 4K",
+      };
+      const SIZE_LABELS = {
+        "auto": "自动",
+        "1:1": "1:1",
+        "3:2": "3:2",
+        "2:3": "2:3",
+        "16:9": "16:9",
+        "9:16": "9:16",
+        "4:3": "4:3",
+        "3:4": "3:4",
+        "5:4": "5:4",
+        "4:5": "4:5",
+        "2:1": "2:1",
+        "1:2": "1:2",
+        "3:1": "3:1",
+        "1:3": "1:3",
+      };
+
+      function setStatus(kind, text) {
+        const dot = els.status.querySelector(".dot");
+        const label = els.status.querySelector("span:last-child");
+        dot.className = "dot" + (kind ? ` ${kind}` : "");
+        label.textContent = text;
+      }
+
+      function log(message, { flash = false } = {}) {
+        els.log.textContent = message;
+        if (flash) {
+          els.log.classList.remove("flash");
+          void els.log.offsetWidth;
+          els.log.classList.add("flash");
+          els.log.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+      }
+
+      function shakeElement(el) {
+        el.classList.remove("shake");
+        void el.offsetWidth;
+        el.classList.add("shake");
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function buildTaskAuthHeaders() {
+        const apiKey = state.savedKey.trim();
+        if (!apiKey) return {};
+        return { Authorization: `Bearer ${apiKey}` };
+      }
+
+
+      function setPromptToolLoading(loading, label) {
+        state.promptToolRunning = loading;
+        els.optimizePromptBtn.disabled = loading;
+        els.translatePromptBtn.disabled = loading;
+        els.inputCard.classList.toggle("tool-active", loading);
+        if (!loading) {
+          els.optimizePromptBtn.innerHTML = `<span class="btn-icon">✦</span><span>提示词优化</span>`;
+          els.translatePromptBtn.innerHTML = `<span class="btn-icon">⇄</span><span>翻译</span>`;
+          return;
+        }
+        if (label === "optimize") {
+          els.optimizePromptBtn.innerHTML = `<span class="btn-spinner"></span><span>优化中...</span>`;
+        }
+        if (label === "translate") {
+          els.translatePromptBtn.innerHTML = `<span class="btn-spinner"></span><span>翻译中...</span>`;
+        }
+      }
+
+      function autoResizePrompt() {
+        els.prompt.style.height = "auto";
+        els.prompt.style.height = Math.min(els.prompt.scrollHeight, 200) + "px";
+      }
+
+      function flashPromptField() {
+        els.prompt.classList.remove("flash");
+        void els.prompt.offsetWidth;
+        els.prompt.classList.add("flash");
+        autoResizePrompt();
+        els.prompt.style.transition = "none";
+        els.prompt.style.opacity = "0.3";
+        requestAnimationFrame(() => {
+          els.prompt.style.transition = "opacity 0.4s ease";
+          els.prompt.style.opacity = "1";
+        });
+        setTimeout(() => {
+          els.prompt.classList.remove("flash");
+          els.prompt.style.transition = "";
+          els.prompt.style.opacity = "";
+        }, 700);
+      }
+
+      function setGenerationLoading(loading) {
+        els.generateBtn.disabled = loading;
+        els.generateBtn.classList.toggle("loading", loading);
+        if (state.mode === "reverse") {
+          els.generateBtn.textContent = loading ? "反推中" : "反推";
+          return;
+        }
+        els.generateBtn.textContent = loading ? "生成中" : "生成";
+      }
+
+      function syncLoginBtn() {
+        const hasKey = !!state.savedKey;
+        els.keyDot.classList.toggle("ok", hasKey);
+        els.keyLabel.textContent = hasKey ? "已登录" : "登录";
+      }
+
+      function loadSavedKey() {
+        try {
+          const saved = localStorage.getItem(KEY_STORAGE_NAME);
+          if (saved) {
+            state.savedKey = saved;
+            els.apiKeyInput.value = saved;
+          }
+        } catch {
+          // ignore
+        }
+        syncLoginBtn();
+      }
+
+      function loadSavedTaskId() {
+        try {
+          const saved = localStorage.getItem(TASK_STORAGE_NAME) || "";
+          if (saved) {
+            setActiveTaskId(saved, { lock: true });
+          }
+        } catch {
+          // Ignore localStorage read failures for task id recovery.
+        }
+      }
+
+      function syncTaskLockUi() {
+        const hasTaskId = !!state.activeTaskId;
+        els.currentTaskLock.hidden = !hasTaskId;
+        els.currentTaskIdText.textContent = hasTaskId ? state.activeTaskId : "-";
+        els.taskQueryInput.value = hasTaskId ? state.activeTaskId : "";
+        els.taskQueryInput.readOnly = hasTaskId && state.activeTaskLocked;
+        els.taskQueryInput.placeholder = hasTaskId && state.activeTaskLocked
+          ? "当前任务号已锁定，点击“切换”可改查其他任务"
+          : "输入任务号查询生成结果";
+      }
+
+      function setActiveTaskId(taskId, { lock = true } = {}) {
+        state.activeTaskId = taskId;
+        state.activeTaskLocked = !!taskId && lock;
+        syncTaskLockUi();
+        try {
+          localStorage.setItem(TASK_STORAGE_NAME, taskId);
+        } catch {
+          // Ignore localStorage write failures for task id recovery.
+        }
+      }
+
+      function clearActiveTaskId() {
+        state.activeTaskId = "";
+        state.activeTaskLocked = false;
+        syncTaskLockUi();
+        try {
+          localStorage.removeItem(TASK_STORAGE_NAME);
+        } catch {
+          // Ignore localStorage write failures for task id recovery.
+        }
+      }
+
+      function unlockActiveTaskId() {
+        state.activeTaskLocked = false;
+        syncTaskLockUi();
+        els.taskQueryInput.focus();
+        els.taskQueryInput.select();
+      }
+
+      async function copyActiveTaskId() {
+        if (!state.activeTaskId) throw new Error("当前没有任务号可复制");
+        await navigator.clipboard.writeText(state.activeTaskId);
+        log(`任务号已复制\n${state.activeTaskId}`);
+      }
+
+      function stopTaskPolling() {
+        if (state.pollTimer) {
+          clearTimeout(state.pollTimer);
+          state.pollTimer = 0;
+        }
+      }
+
+      function resetTaskDelayNotice() {
+        state.taskDelayNoticeLevel = "";
+      }
+
+
+      function saveKey() {
+        const key = els.apiKeyInput.value.trim();
+        if (!key) {
+          log("请输入 API Key 后再保存。");
+          return;
+        }
+        try {
+          localStorage.setItem(KEY_STORAGE_NAME, key);
+          state.savedKey = key;
+          log("API Key 已保存。");
+          setSettingsOpen(false);
+        } catch {
+          log("保存 API Key 失败。");
+        }
+        syncLoginBtn();
+      }
+
+      function clearSavedKey() {
+        try {
+          localStorage.removeItem(KEY_STORAGE_NAME);
+          state.savedKey = "";
+          els.apiKeyInput.value = "";
+          els.taskRecoverList.innerHTML = "";
+          log("API Key 已清除。");
+        } catch {
+          log("清除 API Key 失败。");
+        }
+        syncLoginBtn();
+      }
+
+      function setSettingsOpen(open) {
+        state.settingsOpen = open;
+        els.settingsModal.classList.toggle("open", open);
+        els.settingsModal.setAttribute("aria-hidden", open ? "false" : "true");
+        if (open) {
+          els.apiKeyInput.value = state.savedKey;
+        }
+      }
+
+      function updateConfigButton() {
+        els.configBtn.textContent = `${MODEL_LABELS[state.model]} | ${SIZE_LABELS[state.size]} | ${QUALITY_LABELS[state.quality]} | ${state.count}张`;
+      }
+
+      function setMode(mode) {
+        state.mode = mode;
+        if (mode === "reverse") {
+          setPanelOpen(false);
+        }
+        els.modeText.classList.toggle("active", mode === "text");
+        els.modeImage.classList.toggle("active", mode === "image");
+        els.modeReverse.classList.toggle("active", mode === "reverse");
+        const needsImage = mode === "image" || mode === "reverse";
+        els.imageSection.style.display = needsImage ? "flex" : "none";
+        els.inlineUploadChip.style.display = needsImage ? "grid" : "none";
+        els.prompt.classList.toggle("has-upload", needsImage);
+        els.configWrap.style.display = mode === "reverse" ? "none" : "";
+        els.prompt.placeholder =
+          mode === "image"
+            ? "模仿这张参考图，生成一张类似风格的、中文的、上班主题的海报"
+            : mode === "reverse"
+              ? "上传一张图片，使用 gpt-5.4-mini 反推这张图的生成提示词"
+              : "输入一句描述，生成风格明确、细节完整的图片";
+        setGenerationLoading(false);
+        if (mode === "text") {
+          setStatus("", "图片生成模式");
+          return;
+        }
+        if (mode === "image") {
+          setStatus("", "参考图生成模式");
+          return;
+        }
+        setStatus("", "提示词反推模式");
+      }
+
+      function setPanelOpen(open) {
+        state.panelOpen = open;
+        els.configBackdrop.classList.toggle("open", open);
+        els.configPanel.classList.toggle("open", open);
+      }
+
+      function buildFilename(index = 1) {
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const hh = String(now.getHours()).padStart(2, "0");
+        const mi = String(now.getMinutes()).padStart(2, "0");
+        const ss = String(now.getSeconds()).padStart(2, "0");
+        const mode = state.mode === "text" ? "text" : "edit";
+        const size = SIZE_LABELS[state.size].replace(":", "x");
+        return `image-${mode}-${size}-${yyyy}${mm}${dd}-${hh}${mi}${ss}-${index}.png`;
+      }
+
+      function renderStageHeader() {
+        els.stagePrompt.textContent = els.prompt.value.trim() || "这里会显示当前生成任务的摘要。";
+        els.stageTags.innerHTML = "";
+
+        const tags = state.mode === "reverse"
+          ? [
+              PROMPT_TOOL_MODEL,
+              "反推提示词",
+              state.files[0] ? "已载入图片" : "等待图片",
+            ]
+          : [
+              MODEL_LABELS[state.model],
+              state.size,
+              SIZE_LABELS[state.size],
+              QUALITY_LABELS[state.quality],
+              `${state.count}张`,
+            ];
+
+        tags.forEach((text) => {
+          const tag = document.createElement("span");
+          tag.className = "stage-tag";
+          tag.textContent = text;
+          els.stageTags.appendChild(tag);
+        });
+
+        if ((state.mode === "image" || state.mode === "reverse") && state.files[0]) {
+          if (state.stageThumbUrl) {
+            URL.revokeObjectURL(state.stageThumbUrl);
+          }
+          state.stageThumbUrl = URL.createObjectURL(state.files[0]);
+          els.stageThumb.style.display = "block";
+          els.stageThumb.innerHTML = `<img src="${state.stageThumbUrl}" alt="参考图">`;
+        } else {
+          if (state.stageThumbUrl) {
+            URL.revokeObjectURL(state.stageThumbUrl);
+            state.stageThumbUrl = "";
+          }
+          els.stageThumb.style.display = "none";
+          els.stageThumb.innerHTML = "";
+        }
+      }
+
+      function openGenerationStage(scroll = true) {
+        renderStageHeader();
+        els.generationStage.classList.add("open");
+        if (scroll) {
+          els.generationStage.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+
+      const LOADING_BADGE_MSGS = [
+        "正在提交任务", "连接服务器中", "排队中", "任务已接收",
+        "正在生成", "模型运算中", "GPU 加速中", "推理进行中",
+        "神经网络运转中", "像素生成中", "图像解码中",
+      ];
+
+      const LOADING_STATUS_MSGS = [
+        "✏️ 正在打草稿，用简单的线条勾勒出画面的大致轮廓和构图关系",
+        "🧠 正在解读提示词语义，理解“你想要什么”背后的每一层含义",
+        "💭 构思中……想象画面的整体氛围，确定色调和情绪基调",
+        "📀 正在调用数十亿参数的神经网络，让 AI “看见”你要的画面",
+        "🎨 正在从上万种色彩中挑选配色方案，让画面和谐而不单调",
+        "🖌️ 开始描绘主体，从最重要的视觉焦点开始落笔",
+        "🌈 光线师到场——正在设计光源方向、强度和色温",
+        "✨ 为物体表面添加纹理，让布料像布料、金属像金属",
+        "📐 调整构图的黄金比例，让视觉重心落在最舒服的位置",
+        "🎭 正在统一风格调性，确保每个元素都属于同一个视觉世界",
+        "🔍 放大到像素级别，精修边缘的每一个过渡和抗锯齿",
+        "💎 启动超分辨率算法，让画面每个角落都细腔满满",
+        "🌟 进入最终润色阶段，像给照片加了一层精致的滤镜",
+        "🎪 渲染背景的层次和景深，让远近关系更立体",
+        "🪄 处理反射、折射和迟来反射，让光影真实可信",
+        "🎯 校准每一个像素的色彩准确度，避免色偏和失真",
+        "🌿 在画面中添加环境细节，让场景更加丰富自然",
+        "🔮 融合风格化效果，让整体画面有独特的艺术气息",
+        "⚡ 模型的数十亿个参数正在高速协同运算，全力以赴",
+        "🎶 微调画面的视觉节奏，让元素之间的空间感更舞空气",
+        "🏔️ 构建空间透视关系，让画面有纵深感而不是一张平面",
+        "🌊 生成流畅的曲线和有机的形体，避免生硬的边界",
+        "🍃 打磨每一个颜色的自然过渡，不留任何突兀的色带",
+        "💫 进入尾声阶段，给每个元素做最后一遍质量检查",
+        "🧩 将所有图层合并为一张完整的画，磨平接缝痕迹",
+        "🎬 最终渲染开始，将内部表示转换为可见的像素矩阵",
+        "📸 执行后期处理：降噪、锐化、对比度微调，让画面干净透亮",
+        "🪞 全局检查对称性和结构一致性，确保没有视觉缺陷",
+        "🎁 打包最终结果，压缩优化后准备交付给你",
+        "🧪 正在运行质量评分算法，确保输出达到预期标准",
+        "🌐 正在同步全局风格一致性，让画面每个角落都和谐",
+        "🛠️ 正在修复微小的视觉缺陷，保证输出完美无瑕",
+        "🌌 为画面注入最后一丝灵气，让它从“好看”变为“惊艳”",
+        "🤖 AI 正在反复审视自己的作品，像画家退后一步审视画布",
+        "🕰️ 耐心等待……好的图片值得多等一会儿",
+        "🌈 正在将随机噪声变成有意义的图像，这是扩散模型的魔法",
+        "🧲 神经网络的注意力机制正在聚焦每一个关键细节",
+        "🎭 正在将你的文字描述变成可见的视觉语言",
+        "📚 模型正在回忆它在数十亿张图片上学到的经验",
+        "🌟 将想象力转化为像素，每个像素都经过精心计算",
+        "🎨 像一位耿耿业业的画师，一笔一笔认真绘制",
+      ];
+
+      let _loadingTimers = [];
+
+      function shuffleArray(arr) {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      }
+
+      function startLoadingMessages() {
+        stopLoadingMessages();
+        const cards = els.previewGrid.querySelectorAll(".preview-item.loading");
+        if (!cards.length) return;
+
+        cards.forEach((card, cardIndex) => {
+          const myStatus = shuffleArray(LOADING_STATUS_MSGS);
+          const myBadge = shuffleArray(LOADING_BADGE_MSGS);
+          let sIdx = 0, bIdx = 0;
+
+          function fadeUpdateStatus() {
+            if (!card.parentNode) return;
+            let el = card.querySelector(".loading-status");
+            if (!el) {
+              el = document.createElement("div");
+              el.className = "loading-status";
+              card.appendChild(el);
+            }
+            el.classList.add("fading");
+            const tid1 = window.setTimeout(() => {
+              const msg = myStatus[sIdx % myStatus.length];
+              sIdx++;
+              el.innerHTML = `<span class="status-text">${msg}<span class="status-dots"></span></span>`;
+              el.classList.remove("fading");
+            }, 350);
+            _loadingTimers.push(tid1);
+            const next = 3500 + Math.random() * 3000 + cardIndex * 800;
+            const tid2 = window.setTimeout(fadeUpdateStatus, next);
+            _loadingTimers.push(tid2);
+          }
+
+          function updateBadge() {
+            if (!card.parentNode) return;
+            const b = card.querySelector(".loading-badge-text");
+            if (!b) return;
+            const msg = myBadge[bIdx % myBadge.length];
+            bIdx++;
+            b.textContent = msg;
+            const next = 4000 + Math.random() * 4000 + cardIndex * 600;
+            const tid = window.setTimeout(updateBadge, next);
+            _loadingTimers.push(tid);
+          }
+
+          const initDelay = 500 + cardIndex * 1200;
+          const tid = window.setTimeout(fadeUpdateStatus, initDelay);
+          _loadingTimers.push(tid);
+          const btid = window.setTimeout(updateBadge, 2000 + cardIndex * 900);
+          _loadingTimers.push(btid);
+        });
+      }
+
+      function stopLoadingMessages() {
+        _loadingTimers.forEach((t) => clearTimeout(t));
+        _loadingTimers = [];
+      }
+
+      function renderLoadingCards() {
+        els.previewGrid.innerHTML = "";
+        for (let i = 0; i < state.count; i += 1) {
+          const card = document.createElement("div");
+          card.className = "preview-item loading";
+          card.style.animationDelay = `${i * 90}ms`;
+          card.innerHTML = `
+            <div class="loading-badge"><span class="badge-spinner"></span><span class="loading-badge-text">正在提交任务</span></div>
+            <div class="loading-shimmer"></div>
+            <div class="loading-grid"></div>
+            <div class="loading-orb orb-a"></div>
+            <div class="loading-orb orb-b"></div>
+            <div class="loading-line line-a"></div>
+            <div class="loading-line line-b"></div>
+          `;
+          els.previewGrid.appendChild(card);
+        }
+        startLoadingMessages();
+      }
+
+      function clearPreview() {
+        stopTaskPolling();
+        stopLoadingMessages();
+        resetTaskDelayNotice();
+        state.downloadItems.forEach((item) => {
+          if (item.objectUrl) URL.revokeObjectURL(item.objectUrl);
+        });
+        state.downloadItems = [];
+        if (state.stageThumbUrl) {
+          URL.revokeObjectURL(state.stageThumbUrl);
+          state.stageThumbUrl = "";
+        }
+        els.stageThumb.style.display = "none";
+        els.stageThumb.innerHTML = "";
+        els.previewGrid.innerHTML = `
+          <div class="placeholder">
+            <strong>这里会显示生成结果</strong>
+            <div>结果会进入后台任务队列，完成后可凭任务号继续查询。</div>
+          </div>
+        `;
+        els.resultInfo.textContent = "未生成图片，结果保存在云端。";
+        els.resultUrl.textContent = "";
+        els.taskRecoverList.innerHTML = "";
+        els.downloadBtn.disabled = true;
+        els.generationStage.classList.remove("open");
+        clearActiveTaskId();
+      }
+
+      function renderThumbs() {
+        state.thumbUrls.forEach((url) => URL.revokeObjectURL(url));
+        state.thumbUrls = [];
+        els.thumbs.innerHTML = "";
+        state.files.forEach((file, index) => {
+          const wrap = document.createElement("div");
+          wrap.className = "thumb";
+          const img = document.createElement("img");
+          const thumbUrl = URL.createObjectURL(file);
+          state.thumbUrls.push(thumbUrl);
+          img.src = thumbUrl;
+          img.alt = file.name;
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.textContent = "×";
+          remove.addEventListener("click", () => {
+            state.files.splice(index, 1);
+            renderThumbs();
+          });
+          wrap.appendChild(img);
+          wrap.appendChild(remove);
+          els.thumbs.appendChild(wrap);
+        });
+
+        const count = state.files.length;
+        els.imageSection.classList.toggle("has-files", count > 0);
+        els.inlineUploadChip.classList.toggle("has-files", count > 0);
+        els.uploadLabel.textContent = count > 0 ? `已添加 ${count} 张` : "添加图片";
+        els.uploadMeta.textContent = count > 0 ? "继续添加" : "最多 4 张";
+      }
+
+      function setActiveButton(group, value) {
+        group.querySelectorAll("button").forEach((button) => {
+          button.classList.toggle("active", button.dataset.value === String(value));
+        });
+      }
+
+      function formatBytes(bytes) {
+        if (bytes < 1024 * 1024) {
+          return `${(bytes / 1024).toFixed(1)}KB`;
+        }
+        return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+      }
+
+      async function normalizeUploadFiles(files) {
+        const maxFiles = state.mode === "reverse" ? 1 : 4;
+        if (files.length > maxFiles) {
+          throw new Error(state.mode === "reverse" ? "反推提示词一次只能上传 1 张图片。" : "参考图最多 4 张。");
+        }
+
+        const normalized = [];
+
+        for (const file of files) {
+          if (file.size > IMAGE_MAX_BYTES) {
+            throw new Error(`图片 ${file.name} 超过 ${formatBytes(IMAGE_MAX_BYTES)}，无法上传。`);
+          }
+
+          normalized.push(file);
+        }
+
+        return normalized;
+      }
+
+      async function readErrorResponse(res) {
+        const raw = await res.text();
+        if (!raw) return "(empty response body)";
+        try {
+          const parsed = JSON.parse(raw);
+          return typeof parsed === "string" ? parsed : JSON.stringify(parsed, null, 2);
+        } catch {
+          return raw;
+        }
+      }
+
+      async function readJsonResponse(res) {
+        const raw = await res.text();
+        if (!raw) {
+          throw new Error("响应体为空");
+        }
+
+        try {
+          return JSON.parse(raw);
+        } catch {
+          throw new Error(`接口返回了非 JSON 响应:\n${raw.slice(0, 1200)}`);
+        }
+      }
+
+      async function runPromptTool(kind) {
+        const apiKey = state.savedKey.trim();
+        const prompt = els.prompt.value.trim();
+        if (!apiKey) { setSettingsOpen(true); throw new Error("请先输入 API Key"); };
+        if (!prompt) throw new Error("请先填写提示词");
+
+        const systemPrompt =
+          kind === "optimize"
+            ? "你是专业的图像提示词优化助手。保留用户原意，补充构图、主体、光线、材质、镜头、风格、细节，但不要胡乱扩写。直接返回优化后的最终提示词，不要加解释，不要加引号。"
+            : "你是专业翻译助手。识别用户输入语言，在中文和英文之间做适合图像生成的自然翻译。只返回翻译后的最终提示词，不要解释，不要加引号。";
+
+        const userPrompt =
+          kind === "optimize"
+            ? `请优化下面这段用于图像生成的提示词：\n${prompt}`
+            : `请翻译下面这段用于图像生成的提示词，中文转英文，英文转中文：\n${prompt}`;
+
+        log(`请求中\nPOST /v1/chat/completions\nmodel: ${PROMPT_TOOL_MODEL}`);
+        const res = await fetch(`${FIXED_BASE_URL}${encodeURIComponent("/v1/chat/completions")}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: PROMPT_TOOL_MODEL,
+            temperature: 0.4,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await readErrorResponse(res);
+          throw new Error(`请求失败 ${res.status}\n${text}`);
+        }
+
+        const data = await readJsonResponse(res);
+        const content =
+          data?.choices?.[0]?.message?.content ||
+          data?.choices?.[0]?.text ||
+          "";
+        const finalText = String(content).trim();
+        if (!finalText) {
+          throw new Error("模型未返回可用内容");
+        }
+        els.prompt.value = finalText;
+        flashPromptField();
+        log(kind === "optimize" ? "提示词优化完成。" : "提示词翻译完成。");
+      }
+
+      function fileToBase64DataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("图片读取失败"));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function toAbsoluteUrl(url) {
+        try {
+          return new URL(String(url), window.location.href).toString();
+        } catch {
+          throw new Error(`无效的图片地址: ${url}`);
+        }
+      }
+
+      function extractAssistantText(data) {
+        const messageContent = data?.choices?.[0]?.message?.content;
+        if (typeof messageContent === "string") {
+          return messageContent.trim();
+        }
+        if (Array.isArray(messageContent)) {
+          const text = messageContent
+            .map((part) => {
+              if (typeof part === "string") return part;
+              if (part && typeof part.text === "string") return part.text;
+              return "";
+            })
+            .join("\n")
+            .trim();
+          if (text) return text;
+        }
+        if (typeof data?.choices?.[0]?.text === "string") {
+          return data.choices[0].text.trim();
+        }
+        return "";
+      }
+
+      async function reversePromptFromImage() {
+        const apiKey = state.savedKey.trim();
+        const file = state.files[0];
+        if (!apiKey) { setSettingsOpen(true); throw new Error("请先输入 API Key"); };
+        if (!file) throw new Error("请先上传 1 张图片");
+
+        log("正在读取图片，准备反推提示词...");
+        const imageUrl = await fileToBase64DataUrl(file);
+        log(`请求中\nPOST /v1/chat/completions\nmodel: ${PROMPT_TOOL_MODEL}\nmode: reverse-prompt`);
+        const res = await fetch(`${FIXED_BASE_URL}${encodeURIComponent("/v1/chat/completions")}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: PROMPT_TOOL_MODEL,
+            temperature: 0.3,
+            messages: [
+              {
+                role: "system",
+                content: "你是专业的图像提示词反推助手。请根据用户上传的图片，提炼一段高质量、可直接用于图像生成的最终提示词。输出中文，包含主体、场景、构图、光线、色彩、材质、风格、镜头和细节。只返回最终提示词，不要解释，不要加标题，不要加引号。",
+              },
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "请根据这张图片反推出一段适合继续生成同类画面的提示词。",
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: imageUrl,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          const text = await readErrorResponse(res);
+          throw new Error(`请求失败 ${res.status}\n${text}`);
+        }
+
+        const data = await readJsonResponse(res);
+        const finalText = extractAssistantText(data);
+        if (!finalText) {
+          throw new Error("模型未返回可用提示词");
+        }
+
+        els.prompt.value = finalText;
+        flashPromptField();
+        els.resultInfo.textContent = "提示词反推完成，结果已写回输入框。";
+        els.resultUrl.innerHTML = `<span>使用模型: ${PROMPT_TOOL_MODEL}</span>`;
+        log("提示词反推完成，结果已写回输入框。");
+      }
+
+      function renderResults(items) {
+        state.downloadItems.forEach((item) => {
+          if (item.objectUrl) URL.revokeObjectURL(item.objectUrl);
+        });
+        state.downloadItems = items;
+        stopLoadingMessages();
+        els.previewGrid.innerHTML = "";
+
+        items.forEach((item, index) => {
+          const card = document.createElement("div");
+          card.className = "preview-item enter";
+          card.style.animationDelay = `${index * 90}ms`;
+          const img = document.createElement("img");
+          img.src = item.url;
+          img.alt = item.filename || `generated image ${index + 1}`;
+          img.style.animationDelay = `${index * 90}ms`;
+          card.appendChild(img);
+          els.previewGrid.appendChild(card);
+        });
+
+        els.resultInfo.textContent = `生成完成: ${items.length} 张图片，已保存到云端。`;
+        els.resultUrl.innerHTML = items
+          .map((item, index) => {
+            if (item.objectUrl) {
+              return `<a href="${item.objectUrl}" download="${item.filename}">下载图片 ${index + 1}</a>`;
+            }
+            const downloadHref = item.downloadUrl || item.download_url || item.url;
+            return `<a href="${downloadHref}" target="_blank" rel="noreferrer">下载图片 ${index + 1}</a> · <a href="${item.url}" target="_blank" rel="noreferrer">打开图片 ${index + 1}</a>`;
+          })
+          .join(" · ");
+        els.downloadBtn.disabled = items.length === 0;
+      }
+
+      function formatTaskStatus(status) {
+        if (status === "completed") return "已完成";
+        if (status === "failed") return "失败";
+        if (status === "processing") return "生成中";
+        return "排队中";
+      }
+
+
+      function formatTaskPrompt(prompt) {
+        if (!prompt) return "未记录提示词";
+        return prompt.length > 72 ? `${prompt.slice(0, 72)}...` : prompt;
+      }
+
+      function renderRecoveredTasks(tasks) {
+        if (!Array.isArray(tasks) || !tasks.length) {
+          els.taskRecoverList.innerHTML = `<div class="gallery-empty">当前 API Key 还没有可找回的任务记录。</div>`;
+          return;
+        }
+
+        els.taskRecoverList.innerHTML = tasks
+          .map((task) => {
+            const createdAt = task.created_at ? new Date(task.created_at).toLocaleString() : "未知时间";
+            const updatedAt = task.updated_at ? new Date(task.updated_at).toLocaleString() : createdAt;
+            return `
+              <div class="task-recover-card">
+                <div class="task-recover-head">
+                  <strong>${escapeHtml(task.task_id)}</strong>
+                  <span class="task-status-chip">${escapeHtml(formatTaskStatus(task.status))}</span>
+                </div>
+                <div class="task-recover-meta">创建于 ${escapeHtml(createdAt)} · 最近更新 ${escapeHtml(updatedAt)}</div>
+                <div class="task-recover-prompt">${escapeHtml(formatTaskPrompt(task.prompt || ""))}</div>
+                <div class="task-recover-actions">
+                  <button class="ghost-btn recover-open-btn" type="button" data-task-id="${escapeHtml(task.task_id)}">打开这个任务</button>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      async function loadGalleryWall() {
+        try {
+          const res = await fetch(LIST_ENDPOINT, { method: "GET" });
+          const raw = await res.text();
+          let data;
+          try {
+            data = JSON.parse(raw);
+          } catch {
+            throw new Error("图片流暂时不可用");
+          }
+
+          if (!res.ok || !data.ok) {
+            throw new Error(data.error || `图片流加载失败 ${res.status}`);
+          }
+
+          const items = Array.isArray(data.items) ? data.items : [];
+          if (!items.length) {
+            els.galleryGrid.innerHTML = `<div class="gallery-empty">今日还没有最新图片，生成后会自动展示在这里。</div>`;
+            return;
+          }
+
+          els.galleryGrid.innerHTML = items
+            .map((item, index) => {
+              const label = item.last_modified ? new Date(item.last_modified).toLocaleString() : `图片 ${index + 1}`;
+              return `
+                <a class="gallery-item" href="${item.url}" target="_blank" rel="noreferrer" title="${label}">
+                  <img src="${item.url}" alt="最新图片 ${index + 1}" loading="lazy" />
+                </a>
+              `;
+            })
+            .join("");
+        } catch (err) {
+          els.galleryGrid.innerHTML = `<div class="gallery-empty">${err && err.message ? err.message : String(err)}</div>`;
+        }
+      }
+
+      async function recoverRecentTasks() {
+        const res = await fetch(`${TASK_ENDPOINT}?action=recent&limit=8`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        const raw = await res.text();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error(raw || "找回任务返回异常");
+        }
+
+        if (!res.ok || !data.ok || !Array.isArray(data.tasks)) {
+          throw new Error(data?.error || `找回任务失败 ${res.status}`);
+        }
+
+        renderRecoveredTasks(data.tasks);
+        log(`已找回 ${data.tasks.length} 条最近任务记录。`);
+      }
+
+
+      function updateTaskStatus(task) {
+        const status = task?.status || "queued";
+        const taskId = task?.task_id || state.activeTaskId;
+        const createdAtMs = task?.created_at ? new Date(task.created_at).getTime() : 0;
+        const elapsedMs = createdAtMs ? Date.now() - createdAtMs : 0;
+        const elapsedMinutes = elapsedMs > 0 ? Math.floor(elapsedMs / 60000) : 0;
+        if (status === "completed") {
+          resetTaskDelayNotice();
+          setStatus("good", "生成成功");
+          els.resultInfo.textContent = `任务 ${taskId} 已完成，共 ${task.items.length} 张图片，已保存到云端。`;
+          return;
+        }
+        if (status === "failed") {
+          resetTaskDelayNotice();
+          const timeoutFailed = task?.error === "timeout" || String(task?.message || "").includes("超时");
+          setStatus("bad", timeoutFailed ? "超时失败" : "生成失败");
+          els.resultInfo.textContent = timeoutFailed
+            ? `任务 ${taskId} 处理超时，请重新提交。`
+            : `任务 ${taskId} 失败: ${task.message || "未知错误"}`;
+          return;
+        }
+
+        if (elapsedMs >= TASK_VERY_LONG_WAIT_MS) {
+          state.taskDelayNoticeLevel = "very_long";
+          setStatus("warn", "等待过久");
+          els.resultInfo.textContent = `任务 ${taskId} 已等待超过 5 分钟，建议先记录任务号，稍后继续查询结果。`;
+          return;
+        }
+
+        if (elapsedMs >= TASK_LONG_WAIT_MS) {
+          state.taskDelayNoticeLevel = "long";
+          setStatus("warn", "处理较慢");
+          els.resultInfo.textContent = `任务 ${taskId} 已处理 ${elapsedMinutes} 分钟，当前耗时较长，请继续等待或稍后凭任务号查询。`;
+          return;
+        }
+
+        resetTaskDelayNotice();
+        const PROCESSING_LABELS = [
+          "生成中", "绘制中", "渲染中", "构思中", "创作中",
+          "着色中", "润色中", "合成中", "描绘中", "雕琢中",
+        ];
+        const label = status === "processing"
+          ? PROCESSING_LABELS[Math.floor(Math.random() * PROCESSING_LABELS.length)]
+          : "排队中";
+        setStatus("warn", label);
+        els.resultInfo.textContent = `任务 ${taskId} ${label}，结果可稍后继续查询。`;
+      }
+
+      // ── Task Ball ──
+      const _taskBallState = { panelOpen: false, tasks: [], latestStatus: "" };
+
+      function updateTaskBall(task) {
+        if (!task || !task.task_id) return;
+        const idx = _taskBallState.tasks.findIndex(t => t.task_id === task.task_id);
+        if (idx >= 0) {
+          _taskBallState.tasks[idx] = { ..._taskBallState.tasks[idx], ...task };
+        } else {
+          _taskBallState.tasks.unshift(task);
+          if (_taskBallState.tasks.length > 20) _taskBallState.tasks.pop();
+        }
+
+        const latest = _taskBallState.tasks[0];
+        _taskBallState.latestStatus = latest?.status || "queued";
+
+        els.taskBall.classList.add("visible");
+        updateTaskBallOrb();
+        if (_taskBallState.panelOpen) renderTaskBallList();
+      }
+
+      function updateTaskBallOrb() {
+        const s = _taskBallState.latestStatus;
+        const hasActive = _taskBallState.tasks.some(t => t.status === "processing" || t.status === "queued");
+        const orbInner = els.taskBallOrb.querySelector(".orb-spinner") || els.taskBallOrb.querySelector(".orb-icon");
+        if (hasActive) {
+          if (orbInner?.className !== "orb-spinner") orbInner.outerHTML = '<div class="orb-spinner"></div>';
+          els.taskBallBadge.className = "orb-badge processing";
+        } else if (s === "failed") {
+          orbInner.outerHTML = '<span class="orb-icon">!</span>';
+          els.taskBallBadge.className = "orb-badge failed";
+        } else {
+          orbInner.outerHTML = '<span class="orb-icon">✓</span>';
+          els.taskBallBadge.className = "orb-badge completed";
+        }
+      }
+
+      function renderTaskBallList() {
+        const tasks = _taskBallState.tasks;
+        if (!tasks.length) {
+          els.taskBallList.innerHTML = '<div class="task-ball-empty">暂无任务</div>';
+          return;
+        }
+        const statusLabels = { queued: "排队", processing: "处理中", completed: "完成", failed: "失败" };
+        els.taskBallList.innerHTML = tasks.map(t => {
+          const st = t.status || "queued";
+          const msg = t.message || t.error || "";
+          const shortId = t.task_id.length > 12 ? t.task_id.slice(0, 6) + "…" + t.task_id.slice(-6) : t.task_id;
+          return `<button class="task-ball-item" data-task-id="${t.task_id}" title="${t.task_id}">
+            <span class="task-ball-dot ${st}"></span>
+            <div class="task-ball-info">
+              <div class="task-ball-info-id">${shortId}</div>
+              ${msg ? `<div class="task-ball-info-msg">${msg.length > 40 ? msg.slice(0, 40) + '…' : msg}</div>` : ''}
+            </div>
+            <span class="task-ball-tag ${st}">${statusLabels[st] || st}</span>
+          </button>`;
+        }).join("");
+      }
+
+      async function refreshTaskBallList() {
+        try {
+          const res = await fetch(`${TASK_ENDPOINT}?action=recent&limit=12`, { cache: "no-store", headers: buildTaskAuthHeaders() });
+          const data = await res.json();
+          if (data.ok && Array.isArray(data.tasks)) {
+            _taskBallState.tasks = data.tasks;
+            const latest = _taskBallState.tasks[0];
+            _taskBallState.latestStatus = latest?.status || "";
+            updateTaskBallOrb();
+            renderTaskBallList();
+            if (_taskBallState.tasks.length) els.taskBall.classList.add("visible");
+          }
+        } catch {}
+      }
+
+      function showTaskBallPanel(show) {
+        _taskBallState.panelOpen = !!show;
+        els.taskBallPanel.classList.toggle("open", !!show);
+        if (show) refreshTaskBallList();
+      }
+
+      function scheduleTaskPolling(taskId) {
+        stopTaskPolling();
+        state.pollTimer = window.setTimeout(() => {
+          queryGenerationTask(taskId, { silent: true }).catch((err) => {
+            log(err && err.message ? err.message : String(err));
+          });
+        }, TASK_POLL_INTERVAL);
+      }
+
+      async function queryGenerationTask(taskId, { silent = false } = {}) {
+        if (!taskId) throw new Error("请输入任务号");
+
+        const res = await fetch(`${TASK_ENDPOINT}?task_id=${encodeURIComponent(taskId)}`, {
+          method: "GET",
+          cache: "no-store",
+          headers: buildTaskAuthHeaders(),
+        });
+        const raw = await res.text();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error(raw || "任务查询返回异常");
+        }
+
+        if (!res.ok || !data.ok || !data.task) {
+          throw new Error(data?.error || `任务查询失败 ${res.status}`);
+        }
+
+        const task = data.task;
+        setActiveTaskId(task.task_id);
+        openGenerationStage(!silent);
+        updateTaskStatus(task);
+        updateTaskBall(task);
+
+        if (task.status === "completed") {
+          stopTaskPolling();
+          renderResults(Array.isArray(task.items) ? task.items : []);
+          els.resultInfo.textContent = `任务 ${task.task_id} 已完成，共 ${task.items.length} 张图片，已保存到云端。`;
+          await loadGalleryWall();
+          if (!silent) {
+            log(`任务 ${task.task_id} 查询成功，已加载生成结果。`);
+          }
+          return task;
+        }
+
+        if (task.status === "failed") {
+          stopTaskPolling();
+          stopLoadingMessages();
+          els.previewGrid.innerHTML = "";
+          setStatus("bad", "生成失败");
+          if (!silent) {
+            log(task.error === "timeout" ? "任务处理超时，请重新提交。" : (task.message || "任务失败。"));
+          }
+          return task;
+        }
+
+        if (!els.previewGrid.querySelector(".preview-item.loading")) {
+          renderLoadingCards();
+        }
+        scheduleTaskPolling(task.task_id);
+        if (!silent) {
+          log(`任务 ${task.task_id} 状态: ${task.status}\n${task.message || "等待上游接口返回结果。"}`);
+        } else if (state.taskDelayNoticeLevel === "very_long") {
+          log(`任务 ${task.task_id} 超过 5 分钟仍未完成。\n你可以保留任务号，稍后点击“查询结果”继续获取状态。`);
+        } else if (state.taskDelayNoticeLevel === "long") {
+          log(`任务 ${task.task_id} 已处理较长时间。\n上游接口仍未返回最终结果，请继续等待或稍后再查。`);
+        }
+        return task;
+      }
+
+      async function submitGenerationTask() {
+        const apiKey = state.savedKey.trim();
+        const model = state.model;
+        const prompt = els.prompt.value.trim();
+
+        if (!apiKey) { setSettingsOpen(true); throw new Error("请先输入 API Key"); };
+        if (!model) throw new Error("请填写模型名");
+        if (!prompt) throw new Error("请填写提示词");
+
+        const form = new FormData();
+        form.append("api_key", apiKey);
+        form.append("mode", state.mode);
+        form.append("model", model);
+        form.append("prompt", prompt);
+        form.append("size", state.size);
+        form.append("quality", state.quality);
+        form.append("count", String(state.count));
+        form.append("public", state.publicGallery ? "1" : "0");
+
+        const files = state.files.slice(0, 4);
+        if (state.mode === "image" && !files.length) {
+          throw new Error("请先上传一张参考图片");
+        }
+
+        files.forEach((file) => {
+          form.append("image[]", file, file.name);
+        });
+
+        log(`请求中\nPOST /generate-task.php\nmode: ${state.mode}\nmodel: ${model}`);
+        const res = await fetch(TASK_ENDPOINT, {
+          method: "POST",
+          body: form,
+        });
+
+        const raw = await res.text();
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error(raw || "任务创建返回异常");
+        }
+
+        if (!res.ok || !data.ok || !data.task_id) {
+          throw new Error(data?.error || `任务创建失败 ${res.status}`);
+        }
+
+        return data;
+      }
+
+      async function downloadCurrent() {
+        if (!state.downloadItems.length) throw new Error("当前没有可下载的图片");
+        for (const item of state.downloadItems) {
+          const link = document.createElement("a");
+          if (item.objectUrl) {
+            link.href = item.objectUrl;
+            link.download = item.filename;
+            link.click();
+            continue;
+          }
+          const fetchUrl = item.downloadUrl || item.download_url || item.url;
+          const blob = await fetch(fetchUrl).then((r) => r.blob());
+          const url = URL.createObjectURL(blob);
+          link.href = url;
+          link.download = item.filename;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1500);
+        }
+      }
+
+      els.modeText.addEventListener("click", () => setMode("text"));
+      els.modeImage.addEventListener("click", () => setMode("image"));
+      els.modeReverse.addEventListener("click", () => setMode("reverse"));
+      els.saveKeyBtn.addEventListener("click", saveKey);
+      els.clearKeyBtn.addEventListener("click", clearSavedKey);
+      els.heroLoginBtn.addEventListener("click", () => setSettingsOpen(true));
+      els.closeSettingsBtn.addEventListener("click", () => setSettingsOpen(false));
+
+      els.configBtn.addEventListener("click", () => {
+        setPanelOpen(!state.panelOpen);
+      });
+
+      document.addEventListener("click", (event) => {
+        if (!els.configPanel.contains(event.target) && !els.configBtn.contains(event.target)) {
+          setPanelOpen(false);
+        }
+        if (event.target === els.settingsModal) {
+          setSettingsOpen(false);
+        }
+      });
+
+      els.configBackdrop.addEventListener("click", () => {
+        setPanelOpen(false);
+      });
+
+      els.qualityOptions.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-value]");
+        if (!button) return;
+        state.quality = button.dataset.value;
+        setActiveButton(els.qualityOptions, state.quality);
+        updateConfigButton();
+      });
+
+      els.modelOptions.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-value]");
+        if (!button) return;
+        state.model = button.dataset.value;
+        setActiveButton(els.modelOptions, state.model);
+        updateConfigButton();
+      });
+
+      els.sizeOptions.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-value]");
+        if (!button) return;
+        state.size = button.dataset.value;
+        setActiveButton(els.sizeOptions, state.size);
+        updateConfigButton();
+      });
+
+      els.countOptions.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-value]");
+        if (!button) return;
+        state.count = Number(button.dataset.value);
+        setActiveButton(els.countOptions, state.count);
+        updateConfigButton();
+      });
+
+      els.imageInput.addEventListener("change", (event) => {
+        const files = Array.from(event.target.files || []);
+        Promise.resolve()
+          .then(async () => {
+            const normalized = await normalizeUploadFiles(files);
+            state.files = normalized;
+            renderThumbs();
+            if (normalized.length) {
+              log(
+                state.mode === "reverse"
+                  ? `已选择 ${normalized.length} 张图片，准备反推提示词。单张图片不得超过 ${formatBytes(IMAGE_MAX_BYTES)}。`
+                  : `已选择 ${normalized.length} 张参考图。单张图片不得超过 ${formatBytes(IMAGE_MAX_BYTES)}。`
+              );
+            }
+          })
+          .catch((err) => {
+            state.files = [];
+            event.target.value = "";
+            renderThumbs();
+            log(err && err.message ? err.message : String(err));
+          });
+      });
+
+      document.addEventListener("paste", (event) => {
+        if (state.mode !== "image" && state.mode !== "reverse") return;
+        const items = event.clipboardData?.items;
+        if (!items) return;
+        const imageFiles = [];
+        for (const item of items) {
+          if (item.kind === "file" && item.type.startsWith("image/")) {
+            const file = item.getAsFile();
+            if (file) imageFiles.push(file);
+          }
+        }
+        if (!imageFiles.length) return;
+        event.preventDefault();
+        Promise.resolve()
+          .then(async () => {
+            const normalized = await normalizeUploadFiles(imageFiles);
+            state.files = state.mode === "reverse" ? normalized : [...state.files, ...normalized].slice(0, 16);
+            renderThumbs();
+            log(`已粘贴 ${normalized.length} 张图片。`);
+          })
+          .catch((err) => {
+            log(err && err.message ? err.message : String(err));
+          });
+      });
+
+      els.prompt.addEventListener("input", autoResizePrompt);
+
+      els.prompt.addEventListener("dragover", (e) => {
+        if (state.mode !== "image" && state.mode !== "reverse") return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+      });
+
+      els.prompt.addEventListener("drop", (e) => {
+        if (state.mode !== "image" && state.mode !== "reverse") return;
+        e.preventDefault();
+        const droppedFiles = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith("image/"));
+        if (!droppedFiles.length) return;
+        Promise.resolve()
+          .then(async () => {
+            const normalized = await normalizeUploadFiles(droppedFiles);
+            state.files = state.mode === "reverse" ? normalized : [...state.files, ...normalized].slice(0, 16);
+            renderThumbs();
+            log(`已拖入 ${normalized.length} 张图片。`);
+          })
+          .catch((err) => {
+            log(err && err.message ? err.message : String(err));
+          });
+      });
+
+      els.optimizePromptBtn.addEventListener("click", async () => {
+        try {
+          setPromptToolLoading(true, "optimize");
+          await runPromptTool("optimize");
+        } catch (err) {
+          log(err && err.message ? err.message : String(err));
+        } finally {
+          setPromptToolLoading(false);
+        }
+      });
+
+      els.translatePromptBtn.addEventListener("click", async () => {
+        try {
+          setPromptToolLoading(true, "translate");
+          await runPromptTool("translate");
+        } catch (err) {
+          log(err && err.message ? err.message : String(err));
+        } finally {
+          setPromptToolLoading(false);
+        }
+      });
+
+      els.generateBtn.addEventListener("click", async () => {
+        try {
+          const prompt = els.prompt.value.trim();
+          if (!state.savedKey && !prompt) {
+            setSettingsOpen(true);
+            log("请先输入 API Key，然后填写提示词后再生成。", { flash: true });
+            shakeElement(els.generateBtn);
+            return;
+          }
+          if (!state.savedKey) {
+            setSettingsOpen(true);
+            log("请先输入 API Key。", { flash: true });
+            shakeElement(els.generateBtn);
+            return;
+          }
+          if (!prompt && state.mode !== "reverse") {
+            els.prompt.focus();
+            shakeElement(els.prompt);
+            log("请输入提示词后再生成。", { flash: true });
+            return;
+          }
+          if (state.mode === "reverse" && !state.files.length) {
+            shakeElement(els.generateBtn);
+            log("请先上传一张图片再反推。", { flash: true });
+            return;
+          }
+          setGenerationLoading(true);
+          if (state.mode === "reverse") {
+            clearActiveTaskId();
+            resetTaskDelayNotice();
+            setStatus("warn", "分析中");
+            els.resultInfo.textContent = "正在分析图片内容并反推提示词...";
+            els.resultUrl.textContent = "";
+            await reversePromptFromImage();
+            setStatus("good", "反推完成");
+            return;
+          }
+          openGenerationStage();
+          renderLoadingCards();
+          setStatus("warn", "提交中");
+          const created = await submitGenerationTask();
+          resetTaskDelayNotice();
+          setActiveTaskId(created.task_id);
+          updateTaskBall({ task_id: created.task_id, status: "queued", message: "任务已创建，正在排队" });
+          els.resultInfo.textContent = `任务 ${created.task_id} 已创建，正在后台生成，请稍后查询。`;
+          log(`任务已创建\n任务号: ${created.task_id}\n可直接刷新页面后继续查询结果。`);
+          await queryGenerationTask(created.task_id, { silent: true });
+        } catch (err) {
+          stopLoadingMessages();
+          els.previewGrid.innerHTML = "";
+          setStatus("bad", state.mode === "reverse" ? "反推失败" : "生成失败");
+          const message = err && err.message ? err.message : String(err);
+          if (message === "Failed to fetch") {
+            log(
+              state.mode === "reverse"
+                ? `网络请求失败\n${message}\n请检查服务器是否运行，以及到 api.772.ee 的网络连通性。`
+                : `网络请求失败\n${message}\n请检查服务器是否运行，以及到 api.772.ee 的网络连通性。`
+            );
+          } else {
+            log(message);
+          }
+        } finally {
+          setGenerationLoading(false);
+        }
+      });
+
+      els.downloadBtn.addEventListener("click", async () => {
+        try {
+          await downloadCurrent();
+        } catch (err) {
+          log(err && err.message ? err.message : String(err));
+        }
+      });
+
+      els.queryTaskBtn.addEventListener("click", async () => {
+        try {
+          const taskId = els.taskQueryInput.value.trim();
+          if (!taskId) throw new Error("请输入任务号");
+          setGenerationLoading(true);
+          await queryGenerationTask(taskId);
+        } catch (err) {
+          log(err && err.message ? err.message : String(err));
+        } finally {
+          setGenerationLoading(false);
+        }
+      });
+
+      els.recoverTasksBtn.addEventListener("click", async () => {
+        try {
+          setGenerationLoading(true);
+          await recoverRecentTasks();
+        } catch (err) {
+          log(err && err.message ? err.message : String(err));
+        } finally {
+          setGenerationLoading(false);
+        }
+      });
+
+      els.taskRecoverList.addEventListener("click", async (event) => {
+        const openButton = event.target.closest(".recover-open-btn");
+        if (openButton) {
+          const taskId = openButton.dataset.taskId || "";
+          if (!taskId) return;
+          setActiveTaskId(taskId, { lock: true });
+          els.queryTaskBtn.click();
+          return;
+        }
+
+      });
+
+      els.copyTaskIdBtn.addEventListener("click", async () => {
+        try {
+          await copyActiveTaskId();
+        } catch (err) {
+          log(err && err.message ? err.message : String(err));
+        }
+      });
+
+      els.unlockTaskIdBtn.addEventListener("click", () => {
+        unlockActiveTaskId();
+        log("当前任务号已解锁，可输入其他任务号进行查询。");
+      });
+
+      els.taskQueryInput.addEventListener("keydown", async (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        els.queryTaskBtn.click();
+      });
+
+      els.taskBallOrb.addEventListener("click", () => {
+        showTaskBallPanel(!_taskBallState.panelOpen);
+      });
+
+      els.taskBallRefreshBtn.addEventListener("click", () => {
+        refreshTaskBallList();
+      });
+
+      els.taskBallList.addEventListener("click", (e) => {
+        const item = e.target.closest(".task-ball-item");
+        if (!item) return;
+        const taskId = item.dataset.taskId;
+        if (!taskId) return;
+        els.taskQueryInput.value = taskId;
+        setActiveTaskId(taskId, { lock: true });
+        showTaskBallPanel(false);
+        els.queryTaskBtn.click();
+      });
+
+      document.addEventListener("click", (e) => {
+        if (_taskBallState.panelOpen && !els.taskBall.contains(e.target)) {
+          showTaskBallPanel(false);
+        }
+      });
+
+      els.publicToggle.addEventListener("click", () => {
+        state.publicGallery = !state.publicGallery;
+        els.publicToggle.classList.toggle("active", state.publicGallery);
+      });
+
+      els.clearBtn.addEventListener("click", () => {
+        clearPreview();
+        state.files = [];
+        if (els.imageInput) els.imageInput.value = "";
+        renderThumbs();
+        log("结果已清空。");
+        setStatus("", state.mode === "text" ? "图片生成模式" : state.mode === "image" ? "参考图生成模式" : "提示词反推模式");
+      });
+
+      loadSavedKey();
+      setPromptToolLoading(false);
+      setGenerationLoading(false);
+      updateConfigButton();
+      clearPreview();
+      loadSavedTaskId();
+      setMode("text");
+      loadGalleryWall();
+      refreshTaskBallList();
+      if (state.activeTaskId) {
+        queryGenerationTask(state.activeTaskId, { silent: true }).catch(() => {
+          // Ignore restore failures and let the user query manually.
+        });
+      }
+    </script>
+  </body>
+</html>
