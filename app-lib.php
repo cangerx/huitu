@@ -78,6 +78,8 @@ function app_task_db(): PDO
     $pdo = new PDO('sqlite:' . app_task_db_path());
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->exec('PRAGMA journal_mode = WAL');
+    $pdo->exec('PRAGMA busy_timeout = 5000');
     $pdo->exec(
         'CREATE TABLE IF NOT EXISTS generation_tasks (
             task_id TEXT PRIMARY KEY,
@@ -1410,7 +1412,7 @@ function app_resolve_size_to_pixels(string $size, string $quality): string
     $b = (int) $m[2];
     $ratio = $a / $b;
 
-    $maxDim = $quality === 'low' ? 1024 : 2048;
+    $maxDim = $quality === 'high' ? 4096 : ($quality === 'medium' ? 2048 : 1024);
 
     if ($ratio >= 1) {
         $w = $maxDim;
