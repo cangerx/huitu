@@ -1,0 +1,116 @@
+<!-- CANG-AI 绘图 | Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved. -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>灵感广场 - CANG-AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
+:root{--bg:#f5f3f0;--panel:rgba(255,255,255,0.72);--text:#1a1a1a;--muted:#6b7280;--accent:#2d5bf0;--line:rgba(0,0,0,0.06);--shadow:0 24px 48px -12px rgba(0,0,0,0.12)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{position:sticky;top:0;z-index:100;backdrop-filter:saturate(1.8) blur(20px);background:var(--panel);border-bottom:1px solid var(--line);padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px}
+.header h1 .logo{width:28px;height:28px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px}
+.header a{color:var(--accent);text-decoration:none;font-size:14px;font-weight:500}
+.container{max-width:1400px;margin:0 auto;padding:32px 24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.card{background:var(--panel);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);transition:transform .2s}
+.card:hover{transform:translateY(-4px)}
+.card-images{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;aspect-ratio:1;background:var(--line)}
+.card-images.single{grid-template-columns:1fr}
+.card-images img{width:100%;height:100%;object-fit:cover;cursor:pointer;transition:opacity .2s}
+.card-images img:hover{opacity:.85}
+.card-info{padding:14px 16px}
+.card-prompt{font-size:13px;color:var(--text);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-meta{display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--muted)}
+.empty{text-align:center;padding:80px 20px;color:var(--muted);font-size:16px}
+.load-more{display:block;margin:40px auto;padding:12px 32px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer}
+.load-more:disabled{opacity:.5;cursor:not-allowed}
+.lightbox{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;cursor:zoom-out}
+.lightbox.active{display:flex}
+.lightbox img{max-width:92vw;max-height:92vh;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1><span class="logo">C</span>灵感广场</h1>
+  <a href="/">← 返回生成</a>
+</div>
+<div class="container">
+  <div class="grid" id="grid"></div>
+  <div id="empty" class="empty" style="display:none">还没有公开作品，去生成第一张吧！</div>
+  <button class="load-more" id="loadMore" style="display:none" onclick="loadMore()">加载更多</button>
+</div>
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('active')">
+  <img id="lightboxImg" src="" alt=""/>
+</div>
+<script>
+let page=1,loading=false,hasMore=true;
+const grid=document.getElementById('grid');
+
+async function load(){
+  if(loading||!hasMore)return;
+  loading=true;
+  document.getElementById('loadMore').disabled=true;
+  try{
+    const res=await fetch(`api/explore-api.php?page=${page}&limit=24`);
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error);
+    if(!data.items.length&&page===1){
+      document.getElementById('empty').style.display='';
+      document.getElementById('loadMore').style.display='none';
+      return;
+    }
+    data.items.forEach(item=>{
+      const card=document.createElement('div');
+      card.className='card';
+      const imgs=item.images||[];
+      const cls=imgs.length===1?'card-images single':'card-images';
+      card.innerHTML=`
+        <div class="${cls}">
+          ${imgs.map(i=>`<img src="${i.url}" loading="lazy" onclick="openLightbox('${i.url}')" alt=""/>`).join('')}
+        </div>
+        <div class="card-info">
+          <div class="card-prompt">${escHtml(item.prompt)}</div>
+          <div class="card-meta">
+            <span>${item.model}</span>
+            <span>${item.size}</span>
+            <span>${new Date(item.created_at).toLocaleDateString('zh-CN')}</span>
+          </div>
+        </div>`;
+      grid.appendChild(card);
+    });
+    hasMore=data.items.length>=24&&page*24<data.total;
+    document.getElementById('loadMore').style.display=hasMore?'':'none';
+    page++;
+  }catch(e){
+    console.error(e);
+  }finally{
+    loading=false;
+    document.getElementById('loadMore').disabled=false;
+  }
+}
+
+function loadMore(){load()}
+function openLightbox(url){
+  document.getElementById('lightboxImg').src=url;
+  document.getElementById('lightbox').classList.add('active');
+}
+function escHtml(s){
+  const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;
+}
+
+load();
+
+let scrollTimer;
+window.addEventListener('scroll',()=>{
+  clearTimeout(scrollTimer);
+  scrollTimer=setTimeout(()=>{
+    if(window.innerHeight+window.scrollY>=document.body.offsetHeight-400)load();
+  },100);
+});
+</script>
+</body>
+</html>

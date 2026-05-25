@@ -1,8 +1,12 @@
 <?php
+/**
+ * CANG-AI 绘图 - 图片列表接口
+ * Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved.
+ */
 
 declare(strict_types=1);
 
-require __DIR__ . '/app-lib.php';
+require __DIR__ . '/../lib/app-lib.php';
 
 try {
     $limit = max(1, min(60, (int) ($_GET['limit'] ?? 18)));

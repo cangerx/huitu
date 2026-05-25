@@ -1,0 +1,368 @@
+<!-- CANG-AI 绘图 | Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved. -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理员登录 - CANG-AI 绘图</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #f5f3f0;
+      --panel: rgba(255, 255, 255, 0.92);
+      --line: rgba(0, 0, 0, 0.06);
+      --text: #1a1a1a;
+      --muted: #6b7280;
+      --accent: #2d5bf0;
+      --accent-soft: rgba(45, 91, 240, 0.08);
+      --red: #ef4444;
+      --shadow: 0 8px 32px -8px rgba(0, 0, 0, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 0%, rgba(45, 91, 240, 0.06), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(249, 115, 22, 0.04), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      background: var(--panel);
+      border-radius: 20px;
+      padding: 48px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 1;
+      backdrop-filter: blur(20px);
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: white;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--accent);
+      color: white;
+      margin-top: 8px;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 16px rgba(45, 91, 240, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .alert-success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #16a34a;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .links {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .links a {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .links a:hover {
+      opacity: 0.8;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .remember-me input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .remember-me label {
+      font-size: 14px;
+      color: var(--muted);
+      cursor: pointer;
+      margin: 0;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .container {
+      animation: fadeIn 0.5s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <h1>管理员登录</h1>
+      <p class="subtitle">CANG-AI 绘图管理系统</p>
+    </div>
+    
+    <div id="alert" class="alert"></div>
+    
+    <form id="loginForm">
+      <div class="form-group">
+        <label>邮箱</label>
+        <input type="email" id="email" required placeholder="admin@example.com" autocomplete="email" />
+      </div>
+      
+      <div class="form-group">
+        <label>密码</label>
+        <input type="password" id="password" required placeholder="••••••" autocomplete="current-password" />
+      </div>
+
+      <div class="remember-me">
+        <input type="checkbox" id="rememberMe" />
+        <label for="rememberMe">记住我</label>
+      </div>
+      
+      <button type="submit" class="btn" id="loginBtn">登录</button>
+    </form>
+
+    <div class="links">
+      <a href="api/install.php">初始化管理员</a>
+      <span style="color: var(--muted); margin: 0 8px;">|</span>
+      <a href="index.html">返回首页</a>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+
+    function showAlert(message, type = 'error') {
+      const alert = document.getElementById('alert');
+      alert.textContent = message;
+      alert.className = `alert alert-${type} show`;
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          alert.classList.remove('show');
+        }, 2000);
+      }
+    }
+
+    function hideAlert() {
+      document.getElementById('alert').classList.remove('show');
+    }
+
+    async function apiFetch(url, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      };
+
+      const response = await fetch(API_BASE + url, {
+        ...options,
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '请求失败');
+      }
+
+      return data;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const rememberMe = document.getElementById('rememberMe').checked;
+
+      if (!email || !password) {
+        showAlert('请填写邮箱和密码');
+        return;
+      }
+
+      const loginBtn = document.getElementById('loginBtn');
+      loginBtn.disabled = true;
+      loginBtn.textContent = '登录中...';
+
+      try {
+        const data = await apiFetch('/api/auth-api.php/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (!data.user.is_admin) {
+          showAlert('此账号没有管理员权限');
+          loginBtn.disabled = false;
+          loginBtn.textContent = '登录';
+          return;
+        }
+
+        localStorage.setItem('cangai_auth_token', data.token);
+        localStorage.setItem('cangai_auth_user', JSON.stringify(data.user));
+        localStorage.setItem('admin_token', data.token);
+
+        if (rememberMe) {
+          localStorage.setItem('admin_remember', 'true');
+        } else {
+          localStorage.removeItem('admin_remember');
+        }
+
+        showAlert('登录成功，正在跳转...', 'success');
+
+        setTimeout(() => {
+          window.location.href = 'admin.html';
+        }, 1000);
+
+      } catch (e) {
+        showAlert(e.message);
+        loginBtn.disabled = false;
+        loginBtn.textContent = '登录';
+      }
+    });
+
+    window.addEventListener('load', () => {
+      const token = localStorage.getItem('cangai_auth_token') || localStorage.getItem('admin_token');
+      if (token) {
+        apiFetch('/api/auth-api.php/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        }).then(data => {
+          if (data.user.is_admin) {
+            window.location.href = 'admin.html';
+          }
+        }).catch(() => {});
+      }
+
+      const remembered = localStorage.getItem('admin_remember');
+      if (remembered) {
+        document.getElementById('rememberMe').checked = true;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,2 +1,8 @@
 runtime/
+config/oss-config.php
+config/r2-config.php
+config/cos-config.php
 *.zip
+.DS_Store
+.claude/
+.playwright-mcp/

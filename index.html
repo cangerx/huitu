@@ -1,3 +1,8 @@
+<!--
+  CANG-AI 绘图 - AI 图像生成平台
+  Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved.
+  https://772.ee
+-->
 <!doctype html>
 <html lang="zh-CN">
   <head>
@@ -865,6 +870,70 @@
         gap: 10px;
         margin-top: 6px;
         flex-wrap: wrap;
+      }
+
+      .auth-error {
+        font-size: 13px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        margin-top: 4px;
+      }
+      .auth-error.err { background: rgba(239,68,68,0.08); color: #dc2626; }
+      .auth-error.ok { background: rgba(34,197,94,0.08); color: #16a34a; }
+
+      .auth-user-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .auth-user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--black);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .auth-user-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .auth-user-email {
+        font-size: 12px;
+        color: #a1a1aa;
+      }
+      .auth-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .auth-stat {
+        background: #f5f3f0;
+        border-radius: 10px;
+        padding: 12px 14px;
+        text-align: center;
+      }
+      .auth-stat-label {
+        font-size: 11px;
+        color: #a1a1aa;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        display: block;
+      }
+      .auth-stat-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        margin-top: 4px;
+        display: block;
       }
 
       .config-block + .config-block {
@@ -2512,7 +2581,7 @@
     <main class="page">
       <div id="announceBar" class="announce-bar">
         <span class="announce-tag">NEW</span>
-        <span>CANG-AI 全新上线，支持 GPT-image 图像生成 · <a href="https://crcr.us.ci" target="_blank">了解更多 →</a></span>
+        <span>CANG-AI 全新上线，支持 GPT-image 图像生成 · <a href="https://772.ee" target="_blank">了解更多 →</a></span>
         <button class="announce-close" onclick="this.parentElement.style.display='none'" aria-label="关闭">×</button>
       </div>
       <section class="hero">
@@ -2721,10 +2790,12 @@
           <div class="log" id="log">等待输入参数。</div>
         </details>
 
-        <details class="gallery-card">
-          <summary class="section-toggle">图片流 <span class="toggle-arrow">›</span></summary>
-          <div id="galleryGrid" class="gallery-grid"></div>
-        </details>
+        <div class="gallery-card" style="cursor:pointer;" onclick="window.open('explore.html','_blank')">
+          <div class="section-toggle" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>灵感广场</span>
+            <span style="font-size:13px;color:#71717a;">探索社区公开创作 →</span>
+          </div>
+        </div>
 
         <footer class="footer">
           <div class="footer-inner">
@@ -2732,13 +2803,6 @@
             <div class="footer-brand">
               <span class="footer-logo">C</span>
               <span class="footer-brand-text">CANG-AI</span>
-            </div>
-            <div class="footer-links">
-              <a href="https://crcr.us.ci" target="_blank" rel="noreferrer">官网</a>
-              <span class="dot">·</span>
-              <a href="https://github.com/cangerx/huitu" target="_blank" rel="noreferrer">GitHub</a>
-              <span class="dot">·</span>
-              <a href="https://crcr.us.ci" target="_blank" rel="noreferrer">API 文档</a>
             </div>
             <div class="footer-copyright">&copy; 2026 CANG-AI &middot; All rights reserved</div>
           </div>
@@ -2761,19 +2825,94 @@
     </div>
 
     <div id="settingsModal" class="settings-modal" aria-hidden="true">
-      <div class="settings-card" role="dialog" aria-label="设置">
+      <div class="settings-card" role="dialog" aria-label="账号">
         <div class="settings-head">
-          <h3>设置</h3>
+          <h3 id="authTitle">登录</h3>
           <button id="closeSettingsBtn" class="icon-btn" type="button" aria-label="关闭">×</button>
         </div>
         <div class="settings-body">
-          <div class="settings-field">
-            <label for="apiKeyInput">API Key</label>
-            <input id="apiKeyInput" class="settings-input" type="password" placeholder="填写 API Key" />
+          <!-- Login Form -->
+          <div id="authLogin" class="auth-panel">
+            <div class="settings-field">
+              <label>邮箱</label>
+              <input id="loginEmail" class="settings-input" type="email" placeholder="your@email.com" />
+            </div>
+            <div class="settings-field">
+              <label>密码</label>
+              <input id="loginPassword" class="settings-input" type="password" placeholder="••••••" />
+            </div>
+            <div id="loginError" class="auth-error" style="display:none;"></div>
+            <div class="settings-foot">
+              <button id="switchToRegister" class="ghost-btn" type="button">注册账号</button>
+              <button id="loginBtn" class="black-btn" type="button">登录</button>
+            </div>
           </div>
-          <div class="settings-foot">
-            <button id="clearKeyBtn" class="ghost-btn" type="button">清除 Key</button>
-            <button id="saveKeyBtn" class="black-btn" type="button">保存 Key</button>
+          <!-- Register Form -->
+          <div id="authRegister" class="auth-panel" style="display:none;">
+            <div class="settings-field">
+              <label>用户名</label>
+              <input id="regName" class="settings-input" type="text" placeholder="昵称" />
+            </div>
+            <div class="settings-field">
+              <label>邮箱</label>
+              <input id="regEmail" class="settings-input" type="email" placeholder="your@email.com" />
+            </div>
+            <div class="settings-field">
+              <label>密码</label>
+              <input id="regPassword" class="settings-input" type="password" placeholder="至少 6 位" />
+            </div>
+            <div class="settings-field">
+              <label>确认密码</label>
+              <input id="regPasswordConfirm" class="settings-input" type="password" placeholder="再次输入密码" />
+            </div>
+            <div class="settings-field">
+              <label>邀请码 <span style="color:#a1a1aa; font-weight:400;">(选填)</span></label>
+              <input id="regInviteCode" class="settings-input" type="text" placeholder="代理邀请码" maxlength="32" />
+            </div>
+            <div id="regError" class="auth-error" style="display:none;"></div>
+            <div class="settings-foot">
+              <button id="switchToLogin" class="ghost-btn" type="button">已有账号</button>
+              <button id="registerBtn" class="black-btn" type="button">注册</button>
+            </div>
+          </div>
+          <!-- Profile (logged in) -->
+          <div id="authProfile" class="auth-panel" style="display:none;">
+            <div class="auth-user-card">
+              <div class="auth-user-avatar" id="profileAvatar">U</div>
+              <div class="auth-user-info">
+                <div class="auth-user-name" id="profileName">—</div>
+                <div class="auth-user-email" id="profileEmail">—</div>
+              </div>
+            </div>
+            <div class="auth-stats">
+              <div class="auth-stat">
+                <span class="auth-stat-label">剩余次数</span>
+                <span class="auth-stat-value" id="profileCredits">0</span>
+              </div>
+              <div class="auth-stat">
+                <span class="auth-stat-label">余额</span>
+                <span class="auth-stat-value" id="profileBalance">¥0.00</span>
+              </div>
+            </div>
+            <div id="inviteCodeSection" class="settings-field" style="display:none;">
+              <label>我的邀请码</label>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <code id="profileInviteCode" style="font-size:16px; letter-spacing:0.1em; font-weight:700; color:#2d5bf0;">—</code>
+                <button type="button" class="ghost-btn" style="font-size:11px;" onclick="navigator.clipboard.writeText(document.getElementById('profileInviteCode').textContent)">复制</button>
+              </div>
+            </div>
+            <div class="settings-field">
+              <label>兑换码</label>
+              <div style="display:flex; gap:8px;">
+                <input id="redeemInput" class="settings-input" type="text" placeholder="输入 32 位兑换码" maxlength="32" style="flex:1;" />
+                <button id="redeemBtn" class="black-btn" type="button" style="white-space:nowrap;">兑换</button>
+              </div>
+            </div>
+            <div id="redeemMsg" class="auth-error" style="display:none;"></div>
+            <div class="settings-foot">
+              <button id="logoutBtn" class="ghost-btn" type="button">退出登录</button>
+              <button id="refreshProfileBtn" class="ghost-btn" type="button">刷新</button>
+            </div>
           </div>
         </div>
       </div>
@@ -2784,13 +2923,10 @@
         modeText: document.getElementById("modeText"),
         modeImage: document.getElementById("modeImage"),
         modeReverse: document.getElementById("modeReverse"),
-        apiKeyInput: document.getElementById("apiKeyInput"),
         inputCard: document.querySelector(".input-card"),
         prompt: document.getElementById("prompt"),
         optimizePromptBtn: document.getElementById("optimizePromptBtn"),
         translatePromptBtn: document.getElementById("translatePromptBtn"),
-        saveKeyBtn: document.getElementById("saveKeyBtn"),
-        clearKeyBtn: document.getElementById("clearKeyBtn"),
         heroLoginBtn: document.getElementById("heroLoginBtn"),
         keyDot: document.getElementById("keyDot"),
         keyLabel: document.getElementById("keyLabel"),
@@ -2861,16 +2997,20 @@
         publicGallery: true,
       };
 
-      const FIXED_BASE_URL = "proxy-openai.php?path=";
-      const KEY_STORAGE_NAME = "openai_image_api_key";
+      const FIXED_BASE_URL = "api/proxy-openai.php?path=";
+      const AUTH_TOKEN_KEY = "cangai_auth_token";
+      const AUTH_USER_KEY = "cangai_auth_user";
       const TASK_STORAGE_NAME = "openai_image_last_task_id";
-      const TASK_ENDPOINT = "generate-task.php";
-      const LIST_ENDPOINT = "list.php?limit=18";
+      const AUTH_API_BASE = "api/auth-api.php";
+      const TASK_ENDPOINT = "api/generate-task.php";
+      const LIST_ENDPOINT = "api/list.php?limit=18";
       const PROMPT_TOOL_MODEL = "gpt-5.4-mini";
-      const IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+      const IMAGE_MAX_BYTES = 10 * 1024 * 1024;
       const TASK_POLL_INTERVAL = 4000;
       const TASK_LONG_WAIT_MS = 3 * 60 * 1000;
       const TASK_VERY_LONG_WAIT_MS = 5 * 60 * 1000;
+      const MAX_RETRY_COUNT = 3;
+      const _retryState = {};
       const MODEL_LABELS = {
         "gpt-image-2": "gpt-image-2",
       };
@@ -2929,9 +3069,9 @@
       }
 
       function buildTaskAuthHeaders() {
-        const apiKey = state.savedKey.trim();
-        if (!apiKey) return {};
-        return { Authorization: `Bearer ${apiKey}` };
+        const token = state.savedKey.trim();
+        if (!token) return {};
+        return { Authorization: `Bearer ${token}` };
       }
 
 
@@ -2986,22 +3126,94 @@
         els.generateBtn.textContent = loading ? "生成中" : "生成";
       }
 
+      let authUser = null;
+
       function syncLoginBtn() {
-        const hasKey = !!state.savedKey;
-        els.keyDot.classList.toggle("ok", hasKey);
-        els.keyLabel.textContent = hasKey ? "已登录" : "登录";
+        const loggedIn = !!authUser;
+        els.keyDot.classList.toggle("ok", loggedIn);
+        els.keyLabel.textContent = loggedIn ? (authUser.nickname || authUser.name) : "登录";
       }
 
-      function loadSavedKey() {
-        try {
-          const saved = localStorage.getItem(KEY_STORAGE_NAME);
-          if (saved) {
-            state.savedKey = saved;
-            els.apiKeyInput.value = saved;
-          }
-        } catch {
-          // ignore
+      function showAuthPanel(panel) {
+        document.getElementById("authLogin").style.display = panel === "login" ? "" : "none";
+        document.getElementById("authRegister").style.display = panel === "register" ? "" : "none";
+        document.getElementById("authProfile").style.display = panel === "profile" ? "" : "none";
+        const titles = { login: "登录", register: "注册", profile: "我的账号" };
+        document.getElementById("authTitle").textContent = titles[panel] || "账号";
+      }
+
+      function renderProfile() {
+        if (!authUser) return;
+        document.getElementById("profileAvatar").textContent = (authUser.name || "U")[0].toUpperCase();
+        document.getElementById("profileName").textContent = authUser.nickname || authUser.name;
+        document.getElementById("profileEmail").textContent = authUser.email;
+        document.getElementById("profileCredits").textContent = authUser.credits ?? 0;
+        document.getElementById("profileBalance").textContent = "¥" + Number(authUser.balance ?? 0).toFixed(2);
+        const invSec = document.getElementById("inviteCodeSection");
+        if (authUser.invite_code) {
+          invSec.style.display = "";
+          document.getElementById("profileInviteCode").textContent = authUser.invite_code;
+        } else {
+          invSec.style.display = "none";
         }
+      }
+
+      function showAuthMsg(elId, msg, isErr) {
+        const el = document.getElementById(elId);
+        el.style.display = "";
+        el.textContent = msg;
+        el.className = "auth-error " + (isErr ? "err" : "ok");
+      }
+
+      async function authApiFetch(path, opts = {}) {
+        const headers = { Accept: "application/json", ...opts.headers };
+        if (state.savedKey) headers.Authorization = `Bearer ${state.savedKey}`;
+        if (opts.body && typeof opts.body === "object" && !(opts.body instanceof FormData)) {
+          headers["Content-Type"] = "application/json";
+          opts.body = JSON.stringify(opts.body);
+        }
+        const res = await fetch(AUTH_API_BASE + path, { ...opts, headers });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message || json.errors?.email?.[0] || "请求失败");
+        return json;
+      }
+
+      async function loadSavedKey() {
+        try {
+          const token = localStorage.getItem(AUTH_TOKEN_KEY);
+          const userJson = localStorage.getItem(AUTH_USER_KEY);
+          if (token) {
+            state.savedKey = token;
+            if (userJson) authUser = JSON.parse(userJson);
+            try {
+              const data = await authApiFetch("/me");
+              authUser = data.user;
+              localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
+            } catch {
+              // token may be expired
+            }
+          }
+        } catch { /* ignore */ }
+        syncLoginBtn();
+      }
+
+      function saveAuthSession(token, user) {
+        state.savedKey = token;
+        authUser = user;
+        try {
+          localStorage.setItem(AUTH_TOKEN_KEY, token);
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+        } catch { /* ignore */ }
+        syncLoginBtn();
+      }
+
+      function clearAuthSession() {
+        state.savedKey = "";
+        authUser = null;
+        try {
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          localStorage.removeItem(AUTH_USER_KEY);
+        } catch { /* ignore */ }
         syncLoginBtn();
       }
 
@@ -3074,42 +3286,17 @@
       }
 
 
-      function saveKey() {
-        const key = els.apiKeyInput.value.trim();
-        if (!key) {
-          log("请输入 API Key 后再保存。");
-          return;
-        }
-        try {
-          localStorage.setItem(KEY_STORAGE_NAME, key);
-          state.savedKey = key;
-          log("API Key 已保存。");
-          setSettingsOpen(false);
-        } catch {
-          log("保存 API Key 失败。");
-        }
-        syncLoginBtn();
-      }
-
-      function clearSavedKey() {
-        try {
-          localStorage.removeItem(KEY_STORAGE_NAME);
-          state.savedKey = "";
-          els.apiKeyInput.value = "";
-          els.taskRecoverList.innerHTML = "";
-          log("API Key 已清除。");
-        } catch {
-          log("清除 API Key 失败。");
-        }
-        syncLoginBtn();
-      }
-
       function setSettingsOpen(open) {
         state.settingsOpen = open;
         els.settingsModal.classList.toggle("open", open);
         els.settingsModal.setAttribute("aria-hidden", open ? "false" : "true");
         if (open) {
-          els.apiKeyInput.value = state.savedKey;
+          if (authUser) {
+            renderProfile();
+            showAuthPanel("profile");
+          } else {
+            showAuthPanel("login");
+          }
         }
       }
 
@@ -3475,9 +3662,9 @@
       }
 
       async function runPromptTool(kind) {
-        const apiKey = state.savedKey.trim();
+        const token = state.savedKey.trim();
         const prompt = els.prompt.value.trim();
-        if (!apiKey) { setSettingsOpen(true); throw new Error("请先输入 API Key"); };
+        if (!token || !authUser) { setSettingsOpen(true); throw new Error("请先登录"); };
         if (!prompt) throw new Error("请先填写提示词");
 
         const systemPrompt =
@@ -3494,7 +3681,7 @@
         const res = await fetch(`${FIXED_BASE_URL}${encodeURIComponent("/v1/chat/completions")}`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -3565,9 +3752,9 @@
       }
 
       async function reversePromptFromImage() {
-        const apiKey = state.savedKey.trim();
+        const token = state.savedKey.trim();
         const file = state.files[0];
-        if (!apiKey) { setSettingsOpen(true); throw new Error("请先输入 API Key"); };
+        if (!token || !authUser) { setSettingsOpen(true); throw new Error("请先登录"); };
         if (!file) throw new Error("请先上传 1 张图片");
 
         log("正在读取图片，准备反推提示词...");
@@ -3576,7 +3763,7 @@
         const res = await fetch(`${FIXED_BASE_URL}${encodeURIComponent("/v1/chat/completions")}`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${apiKey}`,
+            Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
@@ -3930,11 +4117,48 @@
 
         if (task.status === "failed") {
           stopTaskPolling();
+          const retries = _retryState[task.task_id] || 0;
+          if (retries < MAX_RETRY_COUNT) {
+            _retryState[task.task_id] = retries + 1;
+            log(`任务失败，自动重试中 (${retries + 1}/${MAX_RETRY_COUNT})...`);
+            setStatus("warn", `重试 ${retries + 1}/${MAX_RETRY_COUNT}`);
+            try {
+              const retryRes = await fetch(AUTH_API_BASE + "/apps/image-gen/retry", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${state.savedKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ task_id: task.task_id }),
+              });
+              const retryData = await retryRes.json();
+              if (retryData.ok && retryData.task_id) {
+                setActiveTaskId(retryData.task_id);
+                scheduleTaskPolling(retryData.task_id);
+                return retryData;
+              }
+            } catch (e) { /* fall through to refund */ }
+          }
+          delete _retryState[task.task_id];
           stopLoadingMessages();
           els.previewGrid.innerHTML = "";
           setStatus("bad", "生成失败");
-          if (!silent) {
-            log(task.error === "timeout" ? "任务处理超时，请重新提交。" : (task.message || "任务失败。"));
+          // 自动退款
+          try {
+            const refundRes = await fetch(AUTH_API_BASE + "/apps/image-gen/refund", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${state.savedKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ task_id: task.task_id }),
+            });
+            const refundData = await refundRes.json();
+            if (refundData.ok && refundData.user) {
+              authUser.credits = refundData.user.credits;
+              authUser.balance = refundData.user.balance;
+              try { localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser)); } catch {}
+              syncLoginBtn();
+              log(`生成失败，已重试${MAX_RETRY_COUNT}次均未成功，已自动退还1次额度。`);
+            } else {
+              log(task.error === "timeout" ? "任务处理超时。" : (task.message || "任务失败。"));
+            }
+          } catch (e) {
+            log(task.error === "timeout" ? "任务处理超时。" : (task.message || "任务失败。"));
           }
           return task;
         }
@@ -3954,16 +4178,16 @@
       }
 
       async function submitGenerationTask() {
-        const apiKey = state.savedKey.trim();
+        const token = state.savedKey.trim();
         const model = state.model;
         const prompt = els.prompt.value.trim();
 
-        if (!apiKey) { setSettingsOpen(true); throw new Error("请先输入 API Key"); };
+        if (!token || !authUser) { setSettingsOpen(true); throw new Error("请先登录"); };
         if (!model) throw new Error("请填写模型名");
         if (!prompt) throw new Error("请填写提示词");
 
         const form = new FormData();
-        form.append("api_key", apiKey);
+        form.append("api_key", token);
         form.append("mode", state.mode);
         form.append("model", model);
         form.append("prompt", prompt);
@@ -3981,9 +4205,10 @@
           form.append("image[]", file, file.name);
         });
 
-        log(`请求中\nPOST /generate-task.php\nmode: ${state.mode}\nmodel: ${model}`);
-        const res = await fetch(TASK_ENDPOINT, {
+        log(`请求中\nPOST /api/apps/image-gen/generate\nmode: ${state.mode}\nmodel: ${model}`);
+        const res = await fetch(AUTH_API_BASE + "/apps/image-gen/generate", {
           method: "POST",
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
           body: form,
         });
 
@@ -3997,6 +4222,13 @@
 
         if (!res.ok || !data.ok || !data.task_id) {
           throw new Error(data?.error || `任务创建失败 ${res.status}`);
+        }
+
+        if (data.user) {
+          authUser.credits = data.user.credits;
+          authUser.balance = data.user.balance;
+          try { localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser)); } catch {}
+          syncLoginBtn();
         }
 
         return data;
@@ -4025,10 +4257,96 @@
       els.modeText.addEventListener("click", () => setMode("text"));
       els.modeImage.addEventListener("click", () => setMode("image"));
       els.modeReverse.addEventListener("click", () => setMode("reverse"));
-      els.saveKeyBtn.addEventListener("click", saveKey);
-      els.clearKeyBtn.addEventListener("click", clearSavedKey);
       els.heroLoginBtn.addEventListener("click", () => setSettingsOpen(true));
       els.closeSettingsBtn.addEventListener("click", () => setSettingsOpen(false));
+
+      document.getElementById("switchToRegister").addEventListener("click", () => showAuthPanel("register"));
+      document.getElementById("switchToLogin").addEventListener("click", () => showAuthPanel("login"));
+
+      document.getElementById("loginBtn").addEventListener("click", async () => {
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        if (!email || !password) return showAuthMsg("loginError", "请填写邮箱和密码", true);
+        try {
+          document.getElementById("loginBtn").disabled = true;
+          const data = await authApiFetch("/login", { method: "POST", body: { email, password } });
+          saveAuthSession(data.token, data.user);
+          renderProfile();
+          showAuthPanel("profile");
+          log("登录成功");
+        } catch (e) {
+          showAuthMsg("loginError", e.message, true);
+        } finally {
+          document.getElementById("loginBtn").disabled = false;
+        }
+      });
+
+      document.getElementById("registerBtn").addEventListener("click", async () => {
+        const name = document.getElementById("regName").value.trim();
+        const email = document.getElementById("regEmail").value.trim();
+        const password = document.getElementById("regPassword").value;
+        const passwordConfirm = document.getElementById("regPasswordConfirm").value;
+        const inviteCode = document.getElementById("regInviteCode").value.trim();
+        if (!name || !email || !password) return showAuthMsg("regError", "请填写所有字段", true);
+        if (password !== passwordConfirm) return showAuthMsg("regError", "两次密码不一致", true);
+        if (password.length < 6) return showAuthMsg("regError", "密码至少 6 位", true);
+        try {
+          document.getElementById("registerBtn").disabled = true;
+          const body = { name, email, password, password_confirmation: passwordConfirm };
+          if (inviteCode) body.invite_code = inviteCode;
+          const data = await authApiFetch("/register", {
+            method: "POST",
+            body,
+          });
+          saveAuthSession(data.token, data.user);
+          renderProfile();
+          showAuthPanel("profile");
+          log("注册成功");
+        } catch (e) {
+          showAuthMsg("regError", e.message, true);
+        } finally {
+          document.getElementById("registerBtn").disabled = false;
+        }
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        try { await authApiFetch("/logout", { method: "POST" }); } catch { /* ignore */ }
+        clearAuthSession();
+        showAuthPanel("login");
+        log("已退出登录");
+      });
+
+      document.getElementById("refreshProfileBtn").addEventListener("click", async () => {
+        try {
+          const data = await authApiFetch("/me");
+          authUser = data.user;
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
+          renderProfile();
+          syncLoginBtn();
+        } catch (e) {
+          showAuthMsg("redeemMsg", e.message, true);
+        }
+      });
+
+      document.getElementById("redeemBtn").addEventListener("click", async () => {
+        const code = document.getElementById("redeemInput").value.trim();
+        if (!code || code.length !== 32) return showAuthMsg("redeemMsg", "请输入 32 位兑换码", true);
+        try {
+          document.getElementById("redeemBtn").disabled = true;
+          const data = await authApiFetch("/redeem", { method: "POST", body: { code } });
+          authUser.credits = data.user.credits;
+          authUser.balance = data.user.balance;
+          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(authUser));
+          renderProfile();
+          syncLoginBtn();
+          document.getElementById("redeemInput").value = "";
+          showAuthMsg("redeemMsg", `兑换成功！次数 +${data.added_credits}，额度 +¥${Number(data.added_balance).toFixed(2)}`, false);
+        } catch (e) {
+          showAuthMsg("redeemMsg", e.message, true);
+        } finally {
+          document.getElementById("redeemBtn").disabled = false;
+        }
+      });
 
       els.configBtn.addEventListener("click", () => {
         setPanelOpen(!state.panelOpen);

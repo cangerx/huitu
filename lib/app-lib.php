@@ -1,8 +1,14 @@
 <?php
+/**
+ * CANG-AI 绘图 - AI 图像生成平台
+ * Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved.
+ * https://772.ee
+ */
 
 declare(strict_types=1);
 
-const APP_RUNTIME_DIR = __DIR__ . '/runtime';
+const APP_ROOT_DIR = __DIR__ . '/..';
+const APP_RUNTIME_DIR = APP_ROOT_DIR . '/runtime';
 const APP_TASK_FILES_DIR = APP_RUNTIME_DIR . '/generation-task-files';
 const APP_IMAGES_DIR = APP_RUNTIME_DIR . '/images';
 const APP_TASK_DB_PATH = APP_RUNTIME_DIR . '/generation-tasks.sqlite';
@@ -12,8 +18,7 @@ const APP_ALLOWED_PROXY_PATHS = [
     '/v1/images/edits',
 ];
 const APP_API_ENDPOINTS = [
-    'https://api.772.ee',   // 默认
-    'http://api.4m3x.cn',   // 备用
+    'https://api.772.ee',
 ];
 
 function app_json_response(int $statusCode, array $payload): void
@@ -212,6 +217,59 @@ function app_request_api_key(): string
     return trim((string) ($_GET['api_key'] ?? $_POST['api_key'] ?? ''));
 }
 
+function app_get_channel(): ?array
+{
+    static $channel = false;
+    if ($channel !== false) {
+        return $channel;
+    }
+
+    $laravelDb = APP_ROOT_DIR . '/../database/database.sqlite';
+    if (!is_file($laravelDb)) {
+        $laravelDb = dirname(APP_ROOT_DIR) . '/database/database.sqlite';
+    }
+    if (!is_file($laravelDb)) {
+        $channel = null;
+        return null;
+    }
+
+    try {
+        $pdo = new PDO('sqlite:' . $laravelDb);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $stmt = $pdo->query("SELECT base_url, api_key, request_mode FROM ai_channels WHERE status = 'active' AND app_name = 'image-gen' ORDER BY priority DESC LIMIT 1");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $channel = $row ?: null;
+    } catch (Throwable $e) {
+        $channel = null;
+    }
+
+    return $channel;
+}
+
+function app_get_api_endpoints(): array
+{
+    $channel = app_get_channel();
+    if ($channel && !empty($channel['base_url'])) {
+        return [rtrim($channel['base_url'], '/')];
+    }
+    return APP_API_ENDPOINTS;
+}
+
+function app_get_channel_api_key(string $fallback = ''): string
+{
+    $channel = app_get_channel();
+    if ($channel && !empty($channel['api_key'])) {
+        return $channel['api_key'];
+    }
+    return $fallback;
+}
+
+function app_is_stream_mode(): bool
+{
+    $channel = app_get_channel();
+    return $channel && ($channel['request_mode'] ?? 'sync') === 'stream';
+}
+
 function app_is_oss_enabled(): bool
 {
     static $result = null;
@@ -219,7 +277,7 @@ function app_is_oss_enabled(): bool
         return $result;
     }
 
-    $configFile = __DIR__ . '/oss-config.php';
+    $configFile = APP_ROOT_DIR . '/config/oss-config.php';
     if (!file_exists($configFile)) {
         $result = false;
         return false;
@@ -321,7 +379,7 @@ function app_build_image_url(string $keyOrFilename): string
 
 function app_build_local_image_url(string $filename): string
 {
-    return 'download.php?file=' . rawurlencode($filename);
+    return 'api/download.php?file=' . rawurlencode($filename);
 }
 
 function app_upload_to_oss(string $key, string $body, string $mimeType): void
@@ -478,7 +536,7 @@ function app_is_r2_enabled(): bool
         return $result;
     }
 
-    $configFile = __DIR__ . '/r2-config.php';
+    $configFile = APP_ROOT_DIR . '/config/r2-config.php';
     if (!file_exists($configFile)) {
         $result = false;
         return false;
@@ -758,7 +816,7 @@ function app_is_cos_enabled(): bool
         return $result;
     }
 
-    $configFile = __DIR__ . '/cos-config.php';
+    $configFile = APP_ROOT_DIR . '/config/cos-config.php';
     if (!file_exists($configFile)) {
         $result = false;
         return false;
@@ -1108,8 +1166,8 @@ function app_create_generation_task(array $input, array $files): array
         }
 
         foreach ($normalized as $index => $fileInfo) {
-            if (($fileInfo['size'] ?? 0) > 2 * 1024 * 1024) {
-                throw new RuntimeException("图片 {$fileInfo['name']} 超过 2MB，无法上传。");
+            if (($fileInfo['size'] ?? 0) > 10 * 1024 * 1024) {
+                throw new RuntimeException("图片 {$fileInfo['name']} 超过 10MB，无法上传。");
             }
             if ((int) ($fileInfo['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
                 throw new RuntimeException("上传文件失败: {$fileInfo['name']}");
@@ -1119,8 +1177,10 @@ function app_create_generation_task(array $input, array $files): array
             $extension = app_extension_from_mime($mimeType);
             $targetPath = $inputDir . '/' . str_pad((string) $index, 2, '0', STR_PAD_LEFT) . '.' . $extension;
 
-            if (!move_uploaded_file((string) $fileInfo['tmp_name'], $targetPath)) {
-                throw new RuntimeException("Failed to persist upload: {$fileInfo['name']}");
+            if (!@move_uploaded_file((string) $fileInfo['tmp_name'], $targetPath)) {
+                if (!@copy((string) $fileInfo['tmp_name'], $targetPath)) {
+                    throw new RuntimeException("Failed to persist upload: {$fileInfo['name']}");
+                }
             }
 
             $savedFiles[] = [
@@ -1154,7 +1214,7 @@ function app_create_generation_task(array $input, array $files): array
             input_count, retention_hours, created_at, updated_at, completed_at,
             message, error, items_json, owner_hash, api_key, files_json
         ) VALUES (
-            :task_id, :status, :mode, :model, :prompt, :size, :quality, :count, 0,
+            :task_id, :status, :mode, :model, :prompt, :size, :quality, :count, :is_public,
             :input_count, 0, :created_at, :updated_at, :completed_at,
             :message, :error, :items_json, "", :api_key, :files_json
         )'
@@ -1168,6 +1228,7 @@ function app_create_generation_task(array $input, array $files): array
         ':size' => $task['size'],
         ':quality' => $task['quality'],
         ':count' => $task['count'],
+        ':is_public' => (int) ($input['public'] ?? 0),
         ':input_count' => $task['input_count'],
         ':created_at' => $task['created_at'],
         ':updated_at' => $task['updated_at'],
@@ -1306,13 +1367,13 @@ function app_list_recent_tasks(int $limit = 12): array
 function app_start_generation_worker(string $taskId): bool
 {
     $phpBinary = PHP_BINARY !== '' ? PHP_BINARY : 'php';
-    $script = __DIR__ . '/generate-task.php';
+    $script = APP_ROOT_DIR . '/api/generate-task.php';
     $command = escapeshellarg($phpBinary)
         . ' '
         . escapeshellarg($script)
         . ' worker '
         . escapeshellarg($taskId)
-        . ' > /dev/null 2>&1 &';
+        . ' 0<&- 3<&- 4<&- 5<&- 6<&- 7<&- > /dev/null 2>&1 &';
 
     if (!function_exists('exec')) {
         return false;
@@ -1370,7 +1431,9 @@ function app_process_generation_task(string $taskId): void
     app_write_generation_task($task);
 
     try {
-        $response = app_call_generation_api($task, (string) ($secret['api_key'] ?? ''), (array) ($secret['files'] ?? []));
+        $taskApiKey = (string) ($secret['api_key'] ?? '');
+        $effectiveApiKey = app_get_channel_api_key($taskApiKey);
+        $response = app_call_generation_api($task, $effectiveApiKey, (array) ($secret['files'] ?? []));
         $items = app_extract_generation_items($response);
         if (!$items) {
             throw new RuntimeException('上游接口未返回图片数据。');
@@ -1443,18 +1506,31 @@ function app_call_generation_api(array $task, string $apiKey, array $files): arr
     $lastError = '';
     $ch = null;
 
-    foreach (APP_API_ENDPOINTS as $base) {
+    foreach (app_get_api_endpoints() as $base) {
         $endpoint = rtrim($base, '/') . $path;
         $headers = $baseHeaders;
 
         $ch = curl_init($endpoint);
+        $useStream = ($mode !== 'image') && app_is_stream_mode();
+
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_RETURNTRANSFER => !$useStream,
             CURLOPT_TIMEOUT => 600,
             CURLOPT_CONNECTTIMEOUT => 30,
             CURLOPT_FOLLOWLOCATION => false,
         ]);
+
+        $streamBuffer = '';
+        if ($useStream) {
+            curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$streamBuffer) {
+                $streamBuffer .= $chunk;
+                if (str_contains($streamBuffer, 'data: [DONE]')) {
+                    return -1;
+                }
+                return strlen($chunk);
+            });
+        }
 
         if ($mode === 'image') {
             $postFields = [
@@ -1474,27 +1550,37 @@ function app_call_generation_api(array $task, string $apiKey, array $files): arr
             curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
         } else {
             $headers[] = 'Content-Type: application/json';
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            $jsonBody = [
                 'model' => (string) $task['model'],
                 'prompt' => (string) $task['prompt'],
                 'size' => $apiSize,
                 'quality' => (string) $task['quality'],
                 'n' => (int) $task['count'],
-            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            ];
+            if ($useStream) {
+                $jsonBody['stream'] = true;
+            }
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($jsonBody, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
         }
 
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $response = curl_exec($ch);
+        if ($useStream) {
+            $response = $streamBuffer !== '' ? $streamBuffer : false;
+            if ($response !== false) {
+                break;
+            }
+        }
         if ($response === false) {
-            $lastError = curl_error($ch) . " ({$base})";
+            $lastError = curl_error($ch);
             curl_close($ch);
             $ch = null;
             continue;
         }
         $httpCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         if (in_array($httpCode, [502, 503, 504], true)) {
-            $lastError = "HTTP {$httpCode} ({$base})";
+            $lastError = "HTTP {$httpCode}";
             curl_close($ch);
             $ch = null;
             $response = false;
@@ -1504,12 +1590,17 @@ function app_call_generation_api(array $task, string $apiKey, array $files): arr
     }
 
     if ($response === false || $ch === null) {
-        throw new RuntimeException("所有 API 节点均不可用: {$lastError}");
+        error_log("API endpoints unavailable: {$lastError}");
+        throw new RuntimeException('上游接口暂时不可用，请稍后重试');
     }
 
     $statusCode = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $contentType = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     curl_close($ch);
+
+    if ($useStream && $streamBuffer !== '') {
+        return app_parse_sse_response($response);
+    }
 
     $decoded = null;
     if (stripos($contentType, 'application/json') !== false || str_starts_with(ltrim($response), '{')) {
@@ -1529,6 +1620,42 @@ function app_call_generation_api(array $task, string $apiKey, array $files): arr
     }
 
     return $decoded;
+}
+
+function app_parse_sse_response(string $raw): array
+{
+    $merged = [];
+    $lines = explode("\n", $raw);
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || $line === 'data: [DONE]') {
+            continue;
+        }
+        if (str_starts_with($line, 'data: ')) {
+            $json = json_decode(substr($line, 6), true);
+            if (!is_array($json)) {
+                continue;
+            }
+            if (empty($merged)) {
+                $merged = $json;
+            } else {
+                if (isset($json['data'])) {
+                    $merged['data'] = array_merge($merged['data'] ?? [], $json['data']);
+                }
+            }
+        }
+    }
+
+    if (empty($merged)) {
+        $decoded = json_decode($raw, true);
+        if (is_array($decoded)) {
+            return $decoded;
+        }
+        throw new RuntimeException('流式响应解析失败。');
+    }
+
+    return $merged;
 }
 
 function app_extract_generation_items(array $response): array

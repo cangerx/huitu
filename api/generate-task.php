@@ -1,8 +1,12 @@
 <?php
+/**
+ * CANG-AI 绘图 - 图片生成任务
+ * Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved.
+ */
 
 declare(strict_types=1);
 
-require __DIR__ . '/app-lib.php';
+require __DIR__ . '/../lib/app-lib.php';
 
 if (PHP_SAPI === 'cli') {
     $command = $argv[1] ?? '';

@@ -1,0 +1,1356 @@
+<!-- CANG-AI 绘图 | Copyright (c) 2025 苍洱 (CANG-AI). All rights reserved. -->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>管理后台 - CANG-AI 绘图</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap');
+
+    :root {
+      --bg: #f7fafc;
+      --bg-secondary: #edf2f7;
+      --panel: #ffffff;
+      --line: #e2e8f0;
+      --text: #2d3748;
+      --text-light: #4a5568;
+      --muted: #718096;
+      --accent: #4c51bf;
+      --accent-hover: #434190;
+      --accent-light: #eef2ff;
+      --success: #38a169;
+      --success-light: #f0fff4;
+      --danger: #e53e3e;
+      --danger-light: #fff5f5;
+      --warning: #dd6b20;
+      --warning-light: #fffaf0;
+      --info: #3182ce;
+      --info-light: #ebf8ff;
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --radius-sm: 6px;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid var(--line);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .header .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      border: 1px solid var(--line);
+      cursor: default;
+    }
+
+    .stat-card:hover {
+      box-shadow: var(--shadow);
+      border-color: var(--accent);
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: var(--panel);
+      border-radius: var(--radius);
+      padding: 8px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--line);
+      overflow-x: auto;
+    }
+
+    .tab {
+      flex: 1;
+      min-width: 100px;
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .tab:hover:not(.active) {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .panel {
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      display: none;
+      border: 1px solid var(--line);
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--line);
+    }
+
+    .panel-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #c53030;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--bg-secondary);
+      border-color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    thead {
+      background: var(--bg-secondary);
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      font-weight: 600;
+      color: var(--text-light);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    tbody tr:hover {
+      background: var(--bg-secondary);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      transition: var(--transition);
+      background: var(--panel);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-admin {
+      background: var(--accent);
+      color: white;
+    }
+
+    .badge-user {
+      background: var(--bg-secondary);
+      color: var(--text-light);
+    }
+
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      font-size: 14px;
+      display: none;
+      border-left: 4px solid;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert-success {
+      background: var(--success-light);
+      color: var(--success);
+      border-color: var(--success);
+    }
+
+    .alert-error {
+      background: var(--danger-light);
+      color: var(--danger);
+      border-color: var(--danger);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .pagination button {
+      padding: 8px 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    .pagination button:hover:not(:disabled) {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .pagination button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination .current {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--panel);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-header {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--text);
+    }
+
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    .code-list {
+      max-height: 400px;
+      overflow-y: auto;
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .code-item {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      padding: 8px;
+      background: white;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎨 管理后台</h1>
+      <div class="user-info">
+        <span id="adminName">管理员</span>
+        <button class="btn btn-small btn-danger" onclick="logout()">退出</button>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="label">总用户数</div>
+        <div class="value" id="statUsers">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">总卡密数</div>
+        <div class="value" id="statCodes">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">已使用卡密</div>
+        <div class="value" id="statUsedCodes">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">总次数</div>
+        <div class="value" id="statCredits">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">总余额</div>
+        <div class="value" id="statBalance">¥0</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('dashboard')">数据概览</button>
+      <button class="tab" onclick="switchTab('users')">用户管理</button>
+      <button class="tab" onclick="switchTab('codes')">卡密管理</button>
+      <button class="tab" onclick="switchTab('tasks')">任务管理</button>
+      <button class="tab" onclick="switchTab('logs')">兑换记录</button>
+      <button class="tab" onclick="switchTab('actionLogs')">操作日志</button>
+      <button class="tab" onclick="switchTab('settings')">系统设置</button>
+    </div>
+
+    <div id="dashboardPanel" class="panel active">
+      <div class="panel-header">
+        <h2>数据概览</h2>
+      </div>
+      <div class="stats" style="margin-bottom: 24px;">
+        <div class="stat-card">
+          <div class="label">可用卡密</div>
+          <div class="value" id="statAvailableCodes">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">已过期卡密</div>
+          <div class="value" id="statExpiredCodes" style="color: var(--red);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">管理员数量</div>
+          <div class="value" id="statAdminUsers">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">总兑换次数</div>
+          <div class="value" id="statTotalRedeems">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">今日任务</div>
+          <div class="value" id="statTodayTasks">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">任务成功率</div>
+          <div class="value" id="statTaskSuccessRate">-</div>
+        </div>
+      </div>
+      <div style="background: var(--panel); border-radius: 12px; padding: 24px; box-shadow: var(--shadow);">
+        <h3 style="font-size: 16px; margin-bottom: 16px;">近7天数据趋势</h3>
+        <div id="dashboardCharts" style="color: var(--muted); text-align: center; padding: 40px;">
+          加载中...
+        </div>
+      </div>
+    </div>
+
+    <div id="usersPanel" class="panel">
+      <div class="panel-header">
+        <h2>用户列表</h2>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="userSearchInput" placeholder="搜索用户..." style="padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px;" />
+          <button class="btn btn-primary btn-small" onclick="searchUsers()">搜索</button>
+        </div>
+      </div>
+      <div id="usersContent" class="loading">加载中...</div>
+      <div id="usersPagination" class="pagination"></div>
+    </div>
+
+    <div id="codesPanel" class="panel">
+      <div class="panel-header">
+        <h2>卡密列表</h2>
+        <button class="btn btn-primary" onclick="showGenerateModal()">生成卡密</button>
+      </div>
+      <div id="codesContent" class="loading">加载中...</div>
+      <div id="codesPagination" class="pagination"></div>
+    </div>
+
+    <div id="logsPanel" class="panel">
+      <div class="panel-header">
+        <h2>兑换记录</h2>
+      </div>
+      <div id="logsContent" class="loading">加载中...</div>
+      <div id="logsPagination" class="pagination"></div>
+    </div>
+
+    <div id="tasksPanel" class="panel">
+      <div class="panel-header">
+        <h2>生成任务</h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <select id="taskStatusFilter" onchange="loadTasks(1)" style="padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px;">
+            <option value="">全部状态</option>
+            <option value="queued">排队中</option>
+            <option value="processing">处理中</option>
+            <option value="completed">已完成</option>
+            <option value="failed">失败</option>
+          </select>
+        </div>
+      </div>
+      <div id="tasksContent" class="loading">加载中...</div>
+      <div id="tasksPagination" class="pagination"></div>
+    </div>
+
+    <div id="actionLogsPanel" class="panel">
+      <div class="panel-header">
+        <h2>操作日志</h2>
+      </div>
+      <div id="actionLogsContent" class="loading">加载中...</div>
+      <div id="actionLogsPagination" class="pagination"></div>
+    </div>
+
+    <div id="settingsPanel" class="panel">
+      <div class="panel-header">
+        <h2>系统设置</h2>
+        <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+      </div>
+      <div id="settingsAlert"></div>
+      <div id="settingsContent" class="loading">加载中...</div>
+    </div>
+  </div>
+
+  <div id="editUserModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">编辑用户</div>
+      <div id="editUserAlert"></div>
+      <div class="form-group">
+        <label>次数</label>
+        <input type="number" id="editUserCredits" min="0" />
+      </div>
+      <div class="form-group">
+        <label>余额</label>
+        <input type="number" id="editUserBalance" min="0" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="editUserIsAdmin" />
+          管理员权限
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeEditUserModal()">取消</button>
+        <button class="btn btn-primary" onclick="saveUser()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="generateModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">生成卡密</div>
+      <div id="generateAlert"></div>
+      <div class="form-group">
+        <label>生成数量</label>
+        <input type="number" id="generateCount" min="1" max="1000" value="1" />
+      </div>
+      <div class="form-group">
+        <label>次数</label>
+        <input type="number" id="generateCredits" min="0" value="10" />
+      </div>
+      <div class="form-group">
+        <label>余额</label>
+        <input type="number" id="generateBalance" min="0" step="0.01" value="0" />
+      </div>
+      <div class="form-group">
+        <label>使用次数限制</label>
+        <input type="number" id="generateUsageLimit" min="1" value="1" />
+      </div>
+      <div class="form-group">
+        <label>过期时间（可选）</label>
+        <input type="datetime-local" id="generateExpiresAt" />
+      </div>
+      <div id="generatedCodes" style="display:none;">
+        <div style="font-weight:600; margin-bottom:8px;">生成的卡密：</div>
+        <div class="code-list" id="codesList"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeGenerateModal()">关闭</button>
+        <button class="btn btn-primary" onclick="generateCodes()">生成</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let authToken = localStorage.getItem('cangai_auth_token') || localStorage.getItem('admin_token') || '';
+    let currentUser = null;
+    let currentUserId = null;
+    let usersPage = 1;
+    let codesPage = 1;
+    let logsPage = 1;
+    let isSearching = false;
+    let searchKeyword = '';
+
+    async function apiFetch(url, options = {}) {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
+        ...options.headers,
+      };
+
+      const response = await fetch(API_BASE + url, {
+        ...options,
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || '请求失败');
+      }
+
+      return data;
+    }
+
+    async function checkAuth() {
+      try {
+        const data = await apiFetch('/api/auth-api.php/me');
+        currentUser = data.user;
+        
+        if (!currentUser.is_admin) {
+          alert('需要管理员权限');
+          window.location.href = 'admin-login.html';
+          return false;
+        }
+
+        document.getElementById('adminName').textContent = currentUser.name;
+        return true;
+      } catch (e) {
+        alert('请先登录');
+        window.location.href = 'admin-login.html';
+        return false;
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const data = await apiFetch('/api/admin-api.php/stats');
+        document.getElementById('statUsers').textContent = data.total_users;
+        document.getElementById('statCodes').textContent = data.total_codes;
+        document.getElementById('statUsedCodes').textContent = data.used_codes;
+        document.getElementById('statCredits').textContent = data.total_credits;
+        document.getElementById('statBalance').textContent = '¥' + data.total_balance.toFixed(2);
+
+        document.getElementById('statAvailableCodes').textContent = data.available_codes || 0;
+        document.getElementById('statExpiredCodes').textContent = data.expired_codes || 0;
+        document.getElementById('statAdminUsers').textContent = data.admin_users || 0;
+        document.getElementById('statTotalRedeems').textContent = data.total_redeems || 0;
+      } catch (e) {
+        console.error('加载统计失败:', e);
+      }
+
+      try {
+        const taskData = await apiFetch('/api/admin-api.php/stats/tasks');
+        const stats = taskData.stats || {};
+        document.getElementById('statTodayTasks').textContent = stats.today || 0;
+        const total = (stats.completed || 0) + (stats.failed || 0);
+        document.getElementById('statTaskSuccessRate').textContent = total > 0
+          ? Math.round((stats.completed || 0) / total * 100) + '%'
+          : '-';
+      } catch (e) {
+        console.error('加载任务统计失败:', e);
+      }
+    }
+
+    async function loadDashboard() {
+      try {
+        const data = await apiFetch('/api/admin-api.php/stats');
+        
+        let chartsHtml = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">';
+        
+        chartsHtml += '<div><h4 style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">用户注册趋势</h4>';
+        if (data.recent_users && data.recent_users.length > 0) {
+          chartsHtml += '<div style="display: flex; flex-direction: column; gap: 8px;">';
+          data.recent_users.forEach(item => {
+            const date = new Date(item.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+            const width = Math.max(10, (item.count / Math.max(...data.recent_users.map(i => i.count))) * 100);
+            chartsHtml += `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; color: var(--muted); width: 60px;">${date}</span>
+                <div style="flex: 1; background: var(--line); border-radius: 4px; height: 24px; position: relative;">
+                  <div style="background: var(--accent); border-radius: 4px; height: 100%; width: ${width}%;"></div>
+                </div>
+                <span style="font-size: 12px; font-weight: 600; width: 30px; text-align: right;">${item.count}</span>
+              </div>
+            `;
+          });
+          chartsHtml += '</div>';
+        } else {
+          chartsHtml += '<p style="color: var(--muted); text-align: center; padding: 20px;">暂无数据</p>';
+        }
+        chartsHtml += '</div>';
+        
+        chartsHtml += '<div><h4 style="font-size: 14px; color: var(--muted); margin-bottom: 12px;">卡密兑换趋势</h4>';
+        if (data.recent_redeems && data.recent_redeems.length > 0) {
+          chartsHtml += '<div style="display: flex; flex-direction: column; gap: 8px;">';
+          data.recent_redeems.forEach(item => {
+            const date = new Date(item.date).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+            const width = Math.max(10, (item.count / Math.max(...data.recent_redeems.map(i => i.count))) * 100);
+            chartsHtml += `
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; color: var(--muted); width: 60px;">${date}</span>
+                <div style="flex: 1; background: var(--line); border-radius: 4px; height: 24px; position: relative;">
+                  <div style="background: var(--green); border-radius: 4px; height: 100%; width: ${width}%;"></div>
+                </div>
+                <span style="font-size: 12px; font-weight: 600; width: 30px; text-align: right;">${item.count}</span>
+              </div>
+            `;
+          });
+          chartsHtml += '</div>';
+        } else {
+          chartsHtml += '<p style="color: var(--muted); text-align: center; padding: 20px;">暂无数据</p>';
+        }
+        chartsHtml += '</div>';
+        
+        chartsHtml += '</div>';
+        
+        document.getElementById('dashboardCharts').innerHTML = chartsHtml;
+      } catch (e) {
+        document.getElementById('dashboardCharts').innerHTML = `<p style="color: var(--red);">加载失败: ${e.message}</p>`;
+      }
+    }
+
+    async function searchUsers() {
+      const keyword = document.getElementById('userSearchInput').value.trim();
+      if (!keyword) {
+        isSearching = false;
+        searchKeyword = '';
+        loadUsers(1);
+        return;
+      }
+      
+      isSearching = true;
+      searchKeyword = keyword;
+      usersPage = 1;
+      
+      const content = document.getElementById('usersContent');
+      content.innerHTML = '<div class="loading">搜索中...</div>';
+
+      try {
+        const data = await apiFetch(`/api/admin-api.php/users/search?keyword=${encodeURIComponent(keyword)}&page=1&per_page=20`);
+        
+        if (data.users.length === 0) {
+          content.innerHTML = '<div class="loading">未找到匹配的用户</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>用户名</th><th>邮箱</th><th>次数</th><th>余额</th><th>角色</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+        
+        data.users.forEach(user => {
+          html += `<tr>
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td>${user.credits}</td>
+            <td>¥${user.balance.toFixed(2)}</td>
+            <td>${user.is_admin ? '<span class="badge badge-admin">管理员</span>' : '<span class="badge badge-user">用户</span>'}</td>
+            <td>${new Date(user.created_at).toLocaleString('zh-CN')}</td>
+            <td>
+              <button class="btn btn-small btn-primary" onclick="editUser(${user.id})">编辑</button>
+              <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">删除</button>
+            </td>
+          </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        content.innerHTML = html;
+
+        renderPagination('usersPagination', data.page, Math.ceil(data.total / data.per_page), (p) => {
+          usersPage = p;
+          searchUsers();
+        });
+      } catch (e) {
+        content.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function loadLogs(page = 1) {
+      logsPage = page;
+      const content = document.getElementById('logsContent');
+      content.innerHTML = '<div class="loading">加载中...</div>';
+
+      try {
+        const data = await apiFetch(`/api/admin-api.php/redeem-logs?page=${page}&per_page=20`);
+        
+        if (data.logs.length === 0) {
+          content.innerHTML = '<div class="loading">暂无兑换记录</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>用户</th><th>邮箱</th><th>卡密</th><th>次数</th><th>余额</th><th>兑换时间</th></tr></thead><tbody>';
+        
+        data.logs.forEach(log => {
+          html += `<tr>
+            <td>${log.id}</td>
+            <td>${log.user_name || '-'}</td>
+            <td>${log.user_email || '-'}</td>
+            <td style="font-family:monospace; font-size:11px;">${log.code ? log.code.substring(0, 16) + '...' : '-'}</td>
+            <td>+${log.credits_added}</td>
+            <td>+¥${parseFloat(log.balance_added).toFixed(2)}</td>
+            <td>${new Date(log.redeemed_at).toLocaleString('zh-CN')}</td>
+          </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        content.innerHTML = html;
+
+        renderPagination('logsPagination', data.page, Math.ceil(data.total / data.per_page), (p) => loadLogs(p));
+      } catch (e) {
+        content.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function loadSettings() {
+      const content = document.getElementById('settingsContent');
+      content.innerHTML = '<div class="loading">加载中...</div>';
+
+      try {
+        const data = await apiFetch('/api/admin-api.php/settings');
+        
+        let html = '<div style="display: grid; gap: 24px;">';
+        
+        const groups = {
+           'SEO设置': ['site_title', 'site_description', 'site_keywords'],
+           'API设置': ['api_key'],
+           '注册设置': ['enable_registration', 'require_invite_code', 'default_credits', 'default_balance'],
+         };
+        
+        for (const [groupName, keys] of Object.entries(groups)) {
+           html += `<div style="background: white; border-radius: 12px; padding: 24px; box-shadow: var(--shadow);">`;
+           html += `<h3 style="font-size: 16px; font-weight: 600; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid var(--line);">${groupName}</h3>`;
+           
+           if (groupName === 'API设置') {
+             html += `<div style="background: rgba(45, 91, 240, 0.08); border-left: 3px solid var(--accent); padding: 12px 16px; margin-bottom: 20px; border-radius: 6px;">
+               <p style="font-size: 14px; color: var(--text); margin: 0;">
+                 💡 <strong>提示：</strong>请前往 
+                 <a href="https://api.772.ee" target="_blank" style="color: var(--accent); text-decoration: none; font-weight: 600;">api.772.ee</a> 
+                 购买并生成API密钥
+               </p>
+             </div>`;
+           }
+           
+           data.settings.filter(s => keys.includes(s.key)).forEach(setting => {
+            html += '<div class="form-group">';
+            html += `<label>${setting.description || setting.key}</label>`;
+            
+            if (setting.type === 'boolean') {
+              const checked = setting.value === '1' ? 'checked' : '';
+              html += `<label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" id="setting_${setting.key}" ${checked} style="width: 18px; height: 18px;" />
+                <span style="font-weight: normal; color: var(--muted);">启用</span>
+              </label>`;
+            } else if (setting.type === 'password') {
+              html += `<input type="password" id="setting_${setting.key}" value="${setting.value || ''}" placeholder="留空则不修改" />`;
+            } else if (setting.type === 'text') {
+              html += `<textarea id="setting_${setting.key}" rows="3" style="width: 100%; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical;">${setting.value || ''}</textarea>`;
+            } else {
+              html += `<input type="${setting.type === 'number' ? 'number' : 'text'}" id="setting_${setting.key}" value="${setting.value || ''}" />`;
+            }
+            
+            html += '</div>';
+          });
+          
+          html += '</div>';
+        }
+        
+        html += '</div>';
+        content.innerHTML = html;
+      } catch (e) {
+        content.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function saveSettings() {
+      const alertEl = document.getElementById('settingsAlert');
+      alertEl.innerHTML = '';
+
+      try {
+        const data = await apiFetch('/api/admin-api.php/settings');
+        const settings = {};
+        
+        data.settings.forEach(setting => {
+          const el = document.getElementById(`setting_${setting.key}`);
+          if (el) {
+            if (setting.type === 'boolean') {
+              settings[setting.key] = el.checked ? '1' : '0';
+            } else if (setting.type === 'number') {
+              settings[setting.key] = el.value;
+            } else {
+              settings[setting.key] = el.value;
+            }
+          }
+        });
+
+        await apiFetch('/api/admin-api.php/settings', {
+          method: 'PUT',
+          body: JSON.stringify(settings),
+        });
+
+        alertEl.innerHTML = '<div class="alert alert-success show">设置已保存</div>';
+        setTimeout(() => {
+          alertEl.innerHTML = '';
+        }, 3000);
+      } catch (e) {
+        alertEl.innerHTML = `<div class="alert alert-error show">${e.message}</div>`;
+      }
+    }
+
+    async function loadUsers(page = 1) {
+      usersPage = page;
+      const content = document.getElementById('usersContent');
+      content.innerHTML = '<div class="loading">加载中...</div>';
+
+      try {
+        const data = await apiFetch(`/api/admin-api.php/users?page=${page}&per_page=20`);
+        
+        if (data.users.length === 0) {
+          content.innerHTML = '<div class="loading">暂无用户</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>用户名</th><th>邮箱</th><th>次数</th><th>余额</th><th>角色</th><th>注册时间</th><th>操作</th></tr></thead><tbody>';
+        
+        data.users.forEach(user => {
+          html += `<tr>
+            <td>${user.id}</td>
+            <td>${user.name}</td>
+            <td>${user.email}</td>
+            <td>${user.credits}</td>
+            <td>¥${user.balance.toFixed(2)}</td>
+            <td>${user.is_admin ? '<span class="badge badge-admin">管理员</span>' : '<span class="badge badge-user">用户</span>'}</td>
+            <td>${new Date(user.created_at).toLocaleString('zh-CN')}</td>
+            <td>
+              <button class="btn btn-small btn-primary" onclick="editUser(${user.id})">编辑</button>
+              <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">删除</button>
+            </td>
+          </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        content.innerHTML = html;
+
+        renderPagination('usersPagination', data.page, Math.ceil(data.total / data.per_page), (p) => loadUsers(p));
+      } catch (e) {
+        content.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function loadCodes(page = 1) {
+      codesPage = page;
+      const content = document.getElementById('codesContent');
+      content.innerHTML = '<div class="loading">加载中...</div>';
+
+      try {
+        const data = await apiFetch(`/api/admin-api.php/redeem-codes?page=${page}&per_page=20`);
+        
+        if (data.codes.length === 0) {
+          content.innerHTML = '<div class="loading">暂无卡密</div>';
+          return;
+        }
+
+        let html = '<table><thead><tr><th>ID</th><th>卡密</th><th>次数</th><th>余额</th><th>使用次数</th><th>过期时间</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+        
+        data.codes.forEach(code => {
+          const isExpired = code.expires_at && new Date(code.expires_at) < new Date();
+          const isUsedUp = code.used_count >= code.usage_limit;
+          
+          html += `<tr style="${isExpired || isUsedUp ? 'opacity:0.5;' : ''}">
+            <td>${code.id}</td>
+            <td style="font-family:monospace; font-size:11px; word-break:break-all;">${code.code}</td>
+            <td>${code.credits}</td>
+            <td>¥${parseFloat(code.balance).toFixed(2)}</td>
+            <td>${code.used_count}/${code.usage_limit}</td>
+            <td>${code.expires_at ? new Date(code.expires_at).toLocaleString('zh-CN') : '永久'}</td>
+            <td>${new Date(code.created_at).toLocaleString('zh-CN')}</td>
+            <td>
+              <button class="btn btn-small btn-danger" onclick="deleteCode(${code.id})">删除</button>
+            </td>
+          </tr>`;
+        });
+        
+        html += '</tbody></table>';
+        content.innerHTML = html;
+
+        renderPagination('codesPagination', data.page, Math.ceil(data.total / data.per_page), (p) => loadCodes(p));
+      } catch (e) {
+        content.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    function renderPagination(elementId, current, total, callback) {
+      const container = document.getElementById(elementId);
+      if (total <= 1) {
+        container.innerHTML = '';
+        return;
+      }
+
+      let html = '';
+      html += `<button ${current === 1 ? 'disabled' : ''} onclick="(${callback})(${current - 1})">上一页</button>`;
+      html += `<span class="current">第 ${current} / ${total} 页</span>`;
+      html += `<button ${current === total ? 'disabled' : ''} onclick="(${callback})(${current + 1})">下一页</button>`;
+      
+      container.innerHTML = html;
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(tab + 'Panel').classList.add('active');
+
+      if (tab === 'dashboard') {
+        loadDashboard();
+      } else if (tab === 'users') {
+        loadUsers(usersPage);
+      } else if (tab === 'codes') {
+        loadCodes(codesPage);
+      } else if (tab === 'logs') {
+        loadLogs(logsPage);
+      } else if (tab === 'tasks') {
+        loadTasks(1);
+      } else if (tab === 'actionLogs') {
+        loadActionLogs(1);
+      } else if (tab === 'settings') {
+        loadSettings();
+      }
+    }
+
+    async function editUser(userId) {
+      try {
+        const data = await apiFetch(`/api/admin-api.php/users?page=1&per_page=1000`);
+        const user = data.users.find(u => u.id === userId);
+        
+        if (!user) {
+          alert('用户不存在');
+          return;
+        }
+
+        currentUserId = userId;
+        document.getElementById('editUserCredits').value = user.credits;
+        document.getElementById('editUserBalance').value = user.balance.toFixed(2);
+        document.getElementById('editUserIsAdmin').checked = user.is_admin;
+        document.getElementById('editUserModal').classList.add('active');
+      } catch (e) {
+        alert('加载用户信息失败: ' + e.message);
+      }
+    }
+
+    function closeEditUserModal() {
+      document.getElementById('editUserModal').classList.remove('active');
+      document.getElementById('editUserAlert').innerHTML = '';
+      currentUserId = null;
+    }
+
+    async function saveUser() {
+      const credits = parseInt(document.getElementById('editUserCredits').value);
+      const balance = parseFloat(document.getElementById('editUserBalance').value);
+      const isAdmin = document.getElementById('editUserIsAdmin').checked;
+
+      try {
+        await apiFetch(`/api/admin-api.php/users/${currentUserId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ credits, balance, is_admin: isAdmin }),
+        });
+
+        document.getElementById('editUserAlert').innerHTML = '<div class="alert alert-success">保存成功</div>';
+        setTimeout(() => {
+          closeEditUserModal();
+          loadUsers(usersPage);
+          loadStats();
+        }, 1000);
+      } catch (e) {
+        document.getElementById('editUserAlert').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm('确定要删除此用户吗？')) return;
+
+      try {
+        await apiFetch(`/api/admin-api.php/users/${userId}`, { method: 'DELETE' });
+        loadUsers(usersPage);
+        loadStats();
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    function showGenerateModal() {
+      document.getElementById('generateModal').classList.add('active');
+      document.getElementById('generatedCodes').style.display = 'none';
+      document.getElementById('codesList').innerHTML = '';
+    }
+
+    function closeGenerateModal() {
+      document.getElementById('generateModal').classList.remove('active');
+      document.getElementById('generateAlert').innerHTML = '';
+      document.getElementById('generatedCodes').style.display = 'none';
+    }
+
+    async function generateCodes() {
+      const count = parseInt(document.getElementById('generateCount').value);
+      const credits = parseInt(document.getElementById('generateCredits').value);
+      const balance = parseFloat(document.getElementById('generateBalance').value);
+      const usageLimit = parseInt(document.getElementById('generateUsageLimit').value);
+      const expiresAt = document.getElementById('generateExpiresAt').value;
+
+      if (count < 1 || count > 1000) {
+        document.getElementById('generateAlert').innerHTML = '<div class="alert alert-error">数量必须在1-1000之间</div>';
+        return;
+      }
+
+      try {
+        const data = await apiFetch('/api/admin-api.php/redeem-codes', {
+          method: 'POST',
+          body: JSON.stringify({
+            count,
+            credits,
+            balance,
+            usage_limit: usageLimit,
+            expires_at: expiresAt || null,
+          }),
+        });
+
+        document.getElementById('generateAlert').innerHTML = `<div class="alert alert-success">成功生成 ${data.count} 个卡密</div>`;
+        
+        let html = '';
+        data.codes.forEach(code => {
+          html += `<div class="code-item">${code}</div>`;
+        });
+        document.getElementById('codesList').innerHTML = html;
+        document.getElementById('generatedCodes').style.display = 'block';
+
+        loadCodes(codesPage);
+        loadStats();
+      } catch (e) {
+        document.getElementById('generateAlert').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function deleteCode(codeId) {
+      if (!confirm('确定要删除此卡密吗？')) return;
+
+      try {
+        await apiFetch(`/api/admin-api.php/redeem-codes/${codeId}`, { method: 'DELETE' });
+        loadCodes(codesPage);
+        loadStats();
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    let tasksPage = 1;
+    let actionLogsPage = 1;
+
+    async function loadTasks(page = 1) {
+      tasksPage = page;
+      const status = document.getElementById('taskStatusFilter')?.value || '';
+      const params = new URLSearchParams({ page, per_page: 20 });
+      if (status) params.set('status', status);
+
+      try {
+        const data = await apiFetch(`/api/admin-api.php/tasks?${params}`);
+        const container = document.getElementById('tasksContent');
+
+        if (!data.tasks.length) {
+          container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">暂无任务</div>';
+          document.getElementById('tasksPagination').innerHTML = '';
+          return;
+        }
+
+        const statusLabels = { queued: '排队中', processing: '处理中', completed: '已完成', failed: '失败' };
+        const statusColors = { queued: 'var(--info)', processing: 'var(--warning)', completed: 'var(--success)', failed: 'var(--danger)' };
+
+        let html = '<table class="table"><thead><tr><th>任务ID</th><th>状态</th><th>模式</th><th>模型</th><th>提示词</th><th>尺寸</th><th>创建时间</th><th>操作</th></tr></thead><tbody>';
+        data.tasks.forEach(t => {
+          const statusColor = statusColors[t.status] || 'var(--muted)';
+          const promptShort = (t.prompt || '').substring(0, 30) + ((t.prompt || '').length > 30 ? '...' : '');
+          html += `<tr>
+            <td style="font-family:monospace;font-size:12px;">${t.task_id.substring(0, 8)}...</td>
+            <td><span style="color:${statusColor};font-weight:600;">${statusLabels[t.status] || t.status}</span></td>
+            <td>${t.mode}</td>
+            <td>${t.model}</td>
+            <td title="${t.prompt || ''}">${promptShort}</td>
+            <td>${t.size}</td>
+            <td>${new Date(t.created_at).toLocaleString('zh-CN')}</td>
+            <td><button class="btn btn-small" style="color:var(--danger);" onclick="deleteTask('${t.task_id}')">删除</button></td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        renderPagination('tasksPagination', data.page, Math.ceil(data.total / data.per_page), (p) => loadTasks(p));
+      } catch (e) {
+        document.getElementById('tasksContent').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    async function deleteTask(taskId) {
+      if (!confirm('确定要删除此任务吗？')) return;
+      try {
+        await apiFetch(`/api/admin-api.php/tasks/${taskId}`, { method: 'DELETE' });
+        loadTasks(tasksPage);
+      } catch (e) {
+        alert('删除失败: ' + e.message);
+      }
+    }
+
+    async function loadActionLogs(page = 1) {
+      actionLogsPage = page;
+      try {
+        const data = await apiFetch(`/api/admin-api.php/logs?page=${page}&per_page=50`);
+        const container = document.getElementById('actionLogsContent');
+
+        if (!data.logs.length) {
+          container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">暂无操作日志</div>';
+          document.getElementById('actionLogsPagination').innerHTML = '';
+          return;
+        }
+
+        let html = '<table class="table"><thead><tr><th>时间</th><th>用户</th><th>操作</th><th>详情</th><th>IP</th></tr></thead><tbody>';
+        data.logs.forEach(l => {
+          html += `<tr>
+            <td>${new Date(l.created_at).toLocaleString('zh-CN')}</td>
+            <td>${l.user_name || '-'} (${l.user_email || '-'})</td>
+            <td>${l.action}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${l.detail || '-'}</td>
+            <td>${l.ip || '-'}</td>
+          </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+
+        renderPagination('actionLogsPagination', data.page, Math.ceil(data.total / data.per_page), (p) => loadActionLogs(p));
+      } catch (e) {
+        document.getElementById('actionLogsContent').innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('cangai_auth_token');
+      localStorage.removeItem('admin_token');
+      window.location.href = 'admin-login.html';
+    }
+
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('active');
+      }
+    });
+
+    (async function init() {
+      const token = new URLSearchParams(window.location.search).get('token');
+      if (token) {
+        authToken = token;
+        localStorage.setItem('cangai_auth_token', token);
+        localStorage.setItem('admin_token', token);
+        window.history.replaceState({}, '', 'admin.html');
+      }
+
+      if (!authToken) {
+        alert('请先登录');
+        window.location.href = 'admin-login.html';
+        return;
+      }
+
+      const isAuth = await checkAuth();
+      if (!isAuth) return;
+
+      await loadStats();
+      await loadDashboard();
+    })();
+  </script>
+</body>
+</html>
